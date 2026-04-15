@@ -31,7 +31,7 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute requireProfile>
+            <ProtectedRoute>
               <Dashboard />
             </ProtectedRoute>
           }

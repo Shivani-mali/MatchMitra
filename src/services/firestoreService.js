@@ -4,6 +4,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
   onSnapshot,
   orderBy,
   query,
@@ -142,4 +143,36 @@ export const incrementProfileViews = async (uid) => {
 
   const currentViews = existing.data()?.profileViews ?? 0;
   await updateDoc(profileRef, { profileViews: currentViews + 1 });
+};
+
+export const getChatsForUser = async (uid) => {
+  const interestsQuerySent = query(interestsCollection, where('status', '==', 'accepted'), where('fromUid', '==', uid));
+  const interestsQueryReceived = query(interestsCollection, where('status', '==', 'accepted'), where('toUid', '==', uid));
+
+  const [sent, received] = await Promise.all([getDocs(interestsQuerySent), getDocs(interestsQueryReceived)]);
+
+  const allInterests = [...sent.docs, ...received.docs].map(doc => ({ id: doc.id, ...doc.data() }));
+
+  const chatPromises = allInterests.map(async (interest) => {
+    const otherUid = interest.fromUid === uid ? interest.toUid : interest.fromUid;
+    const chatId = createChatId(uid, otherUid);
+
+    // Get last message
+    const messagesRef = collection(db, 'chats', chatId, 'messages');
+    const lastMessageQuery = query(messagesRef, orderBy('createdAt', 'desc'), limit(1));
+    const lastMessageSnap = await getDocs(lastMessageQuery);
+    const lastMessage = lastMessageSnap.docs[0]?.data();
+
+    // Get other user's profile
+    const otherProfile = await getProfileByUid(otherUid);
+
+    return {
+      chatId,
+      otherUid,
+      otherProfile,
+      lastMessage: lastMessage ? { ...lastMessage, id: lastMessageSnap.docs[0].id } : null,
+    };
+  });
+
+  return Promise.all(chatPromises);
 };
