@@ -20,6 +20,11 @@ const initialProfile = {
   hobbies: '',
   bio: '',
   photoURL: '',
+  height: '',
+  maritalStatus: '',
+  language: '',
+  interests: '',
+  willingToRelocate: false,
   partnerPreferences: {
     minAge: '',
     maxAge: '',
@@ -56,6 +61,11 @@ const Profile = () => {
             hobbies: data.hobbies ? data.hobbies.join(', ') : '',
             bio: data.bio || '',
             photoURL: '',
+            height: data.height || '',
+            maritalStatus: data.maritalStatus || '',
+            language: data.language || '',
+            interests: data.interests ? data.interests.join(', ') : '',
+            willingToRelocate: data.willingToRelocate || false,
             partnerPreferences: {
               minAge: data.partnerPreferences?.minAge || '',
               maxAge: data.partnerPreferences?.maxAge || '',
@@ -154,8 +164,19 @@ const Profile = () => {
             <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder="Caste (optional)" value={profile.caste} onChange={(event) => updateField('caste', event.target.value)} />
             <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder="Profession" value={profile.profession} onChange={(event) => updateField('profession', event.target.value)} />
             <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder="Education" value={profile.education} onChange={(event) => updateField('education', event.target.value)} />
-            <input className="rounded-lg border border-slate-200 px-3 py-2 md:col-span-2" placeholder="Hobbies" value={profile.hobbies} onChange={(event) => updateField('hobbies', event.target.value)} />
-            <textarea className="rounded-lg border border-slate-200 px-3 py-2 md:col-span-2" rows={3} placeholder="Bio" value={profile.bio} onChange={(event) => updateField('bio', event.target.value)} />
+            <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder="Height (cm)" value={profile.height} onChange={(event) => updateField('height', event.target.value)} />
+            <select className="rounded-lg border border-slate-200 px-3 py-2" value={profile.maritalStatus} onChange={(event) => updateField('maritalStatus', event.target.value)}>
+              <option value="">Marital Status</option>
+              <option value="single">Single</option>
+              <option value="divorced">Divorced</option>
+              <option value="widowed">Widowed</option>
+            </select>
+            <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder="Language" value={profile.language} onChange={(event) => updateField('language', event.target.value)} />
+            <input className="rounded-lg border border-slate-200 px-3 py-2 md:col-span-2" placeholder="Interests (comma separated)" value={profile.interests} onChange={(event) => updateField('interests', event.target.value)} />
+            <label className="flex items-center md:col-span-2">
+              <input type="checkbox" checked={profile.willingToRelocate} onChange={(event) => updateField('willingToRelocate', event.target.checked)} className="mr-2" />
+              Willing to relocate
+            </label>
 
             <div className="md:col-span-2 rounded-xl border border-slate-200 p-3">
               <h2 className="mb-2 text-sm font-semibold text-slate-700">Partner Preferences</h2>

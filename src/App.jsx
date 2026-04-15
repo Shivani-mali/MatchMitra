@@ -39,7 +39,7 @@ function App() {
         <Route
           path="/matches"
           element={
-            <ProtectedRoute requireProfile>
+            <ProtectedRoute>
               <Matches />
             </ProtectedRoute>
           }
@@ -47,7 +47,7 @@ function App() {
         <Route
           path="/chat"
           element={
-            <ProtectedRoute requireProfile>
+            <ProtectedRoute>
               <Chat />
             </ProtectedRoute>
           }
