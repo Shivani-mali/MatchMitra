@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import {
   calculateProfileCompletion,
   getProfileByUid,
@@ -39,6 +40,7 @@ const initialProfile = {
 
 const Profile = () => {
   const { user, refreshProfile } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [profile, setProfile] = useState(initialProfile);
   const [saving, setSaving] = useState(false);
@@ -166,7 +168,7 @@ const Profile = () => {
       <Navbar />
       <div className="border-b border-slate-200 bg-white px-4 py-3 shadow-sm">
         <div className="mx-auto max-w-4xl">
-          <h2 className="text-lg font-semibold text-slate-800">Profile Overview</h2>
+          <h2 className="text-lg font-semibold text-slate-800">{t('profile.photo')}</h2>
         </div>
       </div>
       <main className="mx-auto max-w-4xl p-4 md:p-6">
@@ -174,15 +176,15 @@ const Profile = () => {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h1 className="text-2xl font-bold text-slate-800">
-                {isEditing ? 'Edit Your Profile' : 'Create Your Profile'}
+                {isEditing ? t('profile.editProfile') : t('profile.createProfile')}
               </h1>
               <p className="text-sm text-slate-500">
-                {isEditing ? 'Update your details anytime.' : 'Complete your details to unlock better matches.'}
+                {isEditing ? t('profile.updateDetails') : t('profile.completeDetails')}
               </p>
             </div>
             <div className="flex flex-col items-start gap-2 sm:items-end">
               <div className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
-                Completion: {completionPercent}%
+                {t('profile.completion')}: {completionPercent}%
               </div>
               {profile?.isVerified && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
@@ -190,7 +192,7 @@ const Profile = () => {
                 </span>
               )}
               <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                <span className="text-xs font-semibold text-slate-600">Trust Score</span>
+                <span className="text-xs font-semibold text-slate-600">{t('dashboard.trustScore')}</span>
                 <span className="text-sm font-bold text-slate-900">{profile?.trustScore ?? 80}%</span>
                 <div className="h-2 w-24 overflow-hidden rounded-full bg-slate-200">
                   <div
@@ -203,41 +205,41 @@ const Profile = () => {
           </div>
 
           <form onSubmit={onSubmit} className="mt-6 grid gap-3 md:grid-cols-2">
-            <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder="Name" value={profile.name} onChange={(event) => updateField('name', event.target.value)} />
-            <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder="Age" value={profile.age} onChange={(event) => updateField('age', event.target.value)} />
-            <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder="Gender" value={profile.gender} onChange={(event) => updateField('gender', event.target.value)} />
-            <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder="Location" value={profile.location} onChange={(event) => updateField('location', event.target.value)} />
-            <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder="Religion (optional)" value={profile.religion} onChange={(event) => updateField('religion', event.target.value)} />
-            <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder="Caste (optional)" value={profile.caste} onChange={(event) => updateField('caste', event.target.value)} />
-            <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder="Profession" value={profile.profession} onChange={(event) => updateField('profession', event.target.value)} />
-            <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder="Education" value={profile.education} onChange={(event) => updateField('education', event.target.value)} />
-            <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder="Height (cm)" value={profile.height} onChange={(event) => updateField('height', event.target.value)} />
+            <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder={t('profile.name')} value={profile.name} onChange={(event) => updateField('name', event.target.value)} />
+            <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder={t('profile.age')} value={profile.age} onChange={(event) => updateField('age', event.target.value)} />
+            <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder={t('profile.gender')} value={profile.gender} onChange={(event) => updateField('gender', event.target.value)} />
+            <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder={t('profile.location')} value={profile.location} onChange={(event) => updateField('location', event.target.value)} />
+            <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder={`${t('profile.religion')} (optional)`} value={profile.religion} onChange={(event) => updateField('religion', event.target.value)} />
+            <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder={`${t('profile.caste')} (optional)`} value={profile.caste} onChange={(event) => updateField('caste', event.target.value)} />
+            <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder={t('profile.profession')} value={profile.profession} onChange={(event) => updateField('profession', event.target.value)} />
+            <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder={t('profile.education')} value={profile.education} onChange={(event) => updateField('education', event.target.value)} />
+            <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder={`${t('profile.height')} (cm)`} value={profile.height} onChange={(event) => updateField('height', event.target.value)} />
             <select className="rounded-lg border border-slate-200 px-3 py-2" value={profile.maritalStatus} onChange={(event) => updateField('maritalStatus', event.target.value)}>
-              <option value="">Marital Status</option>
+              <option value="">{t('profile.maritalStatus')}</option>
               <option value="single">Single</option>
               <option value="divorced">Divorced</option>
               <option value="widowed">Widowed</option>
             </select>
-            <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder="Language" value={profile.language} onChange={(event) => updateField('language', event.target.value)} />
-            <input className="rounded-lg border border-slate-200 px-3 py-2 md:col-span-2" placeholder="Interests (comma separated)" value={profile.interests} onChange={(event) => updateField('interests', event.target.value)} />
+            <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder={t('profile.language')} value={profile.language} onChange={(event) => updateField('language', event.target.value)} />
+            <input className="rounded-lg border border-slate-200 px-3 py-2 md:col-span-2" placeholder={`${t('profile.interests')} (comma separated)`} value={profile.interests} onChange={(event) => updateField('interests', event.target.value)} />
             <label className="flex items-center md:col-span-2">
               <input type="checkbox" checked={profile.willingToRelocate} onChange={(event) => updateField('willingToRelocate', event.target.checked)} className="mr-2" />
-              Willing to relocate
+              {t('profile.willingToRelocate')}
             </label>
 
             <div className="md:col-span-2 rounded-xl border border-slate-200 p-3">
-              <h2 className="mb-2 text-sm font-semibold text-slate-700">Partner Preferences</h2>
+              <h2 className="mb-2 text-sm font-semibold text-slate-700">{t('profile.partnerPreferences')}</h2>
               <div className="grid gap-3 md:grid-cols-2">
-                <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder="Preferred min age" value={profile.partnerPreferences.minAge} onChange={(event) => updatePreference('minAge', event.target.value)} />
-                <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder="Preferred max age" value={profile.partnerPreferences.maxAge} onChange={(event) => updatePreference('maxAge', event.target.value)} />
-                <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder="Preferred location" value={profile.partnerPreferences.location} onChange={(event) => updatePreference('location', event.target.value)} />
-                <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder="Preferred religion (optional)" value={profile.partnerPreferences.religion} onChange={(event) => updatePreference('religion', event.target.value)} />
-                <input className="rounded-lg border border-slate-200 px-3 py-2 md:col-span-2" placeholder="Preferred caste (optional)" value={profile.partnerPreferences.caste} onChange={(event) => updatePreference('caste', event.target.value)} />
+                <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder={`${t('profile.minAge')} - ${t('profile.partnerPreferences')}`} value={profile.partnerPreferences.minAge} onChange={(event) => updatePreference('minAge', event.target.value)} />
+                <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder={`${t('profile.maxAge')} - ${t('profile.partnerPreferences')}`} value={profile.partnerPreferences.maxAge} onChange={(event) => updatePreference('maxAge', event.target.value)} />
+                <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder={t('profile.partnerLocation')} value={profile.partnerPreferences.location} onChange={(event) => updatePreference('location', event.target.value)} />
+                <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder={`${t('profile.religion')} (optional)`} value={profile.partnerPreferences.religion} onChange={(event) => updatePreference('religion', event.target.value)} />
+                <input className="rounded-lg border border-slate-200 px-3 py-2 md:col-span-2" placeholder={`${t('profile.caste')} (optional)`} value={profile.partnerPreferences.caste} onChange={(event) => updatePreference('caste', event.target.value)} />
               </div>
             </div>
 
             <div className="md:col-span-2">
-              <label className="mb-1 block text-sm font-medium text-slate-700">Profile Photo</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700">{t('profile.photo')}</label>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <img
                   src={profile.photoURL || 'https://placehold.co/120x120?text=User'}
@@ -252,7 +254,7 @@ const Profile = () => {
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
                   />
                   <p className="mt-1 text-xs text-slate-500">
-                    Upload image from your device. It is saved in your profile and also cached in local storage.
+                      Upload image from your device. It is saved in your profile and also cached in local storage.
                   </p>
                 </div>
               </div>

@@ -1,4 +1,8 @@
+import { useLanguage } from '../context/LanguageContext';
+
 const ProfileModal = ({ profile, isOpen, onClose }) => {
+  const { t } = useLanguage();
+
   if (!isOpen || !profile) return null;
 
   const renderStars = (score = 0) => {
@@ -42,7 +46,7 @@ const ProfileModal = ({ profile, isOpen, onClose }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3">
       <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-4 shadow-xl md:p-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-slate-800 md:text-2xl">{displayValue(profile.name, 'User')}'s Profile</h2>
+          <h2 className="text-xl font-bold text-slate-800 md:text-2xl">{displayValue(profile.name, 'User')}&apos;s Profile</h2>
           <button
             onClick={onClose}
             className="rounded-full p-2 hover:bg-slate-100"
@@ -56,7 +60,7 @@ const ProfileModal = ({ profile, isOpen, onClose }) => {
           <section className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Profile Rating</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">{t('profile.rating')}</p>
                 <div className="mt-1 flex items-center gap-2">
                   {renderStars(profileRating)}
                   <span className="text-sm font-bold text-amber-900">{profileRating.toFixed(1)}/5</span>
@@ -66,9 +70,7 @@ const ProfileModal = ({ profile, isOpen, onClose }) => {
                 Trust Score: {profile.trustScore ?? 80}%
               </div>
             </div>
-            <p className="mt-2 text-xs text-amber-800">
-              This rating helps suggest how complete and trusted the profile looks.
-            </p>
+              <p className="mt-2 text-xs text-amber-800">{t('profile.profileScoreHelp')}</p>
           </section>
 
           {/* Photo Gallery */}
@@ -88,30 +90,30 @@ const ProfileModal = ({ profile, isOpen, onClose }) => {
           {/* Basic Info */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <h3 className="font-semibold text-slate-800">Basic Information</h3>
-              <p className="text-sm text-slate-600">Age: {displayValue(profile.age)}</p>
-              <p className="text-sm text-slate-600">Gender: {displayValue(profile.gender)}</p>
-              <p className="text-sm text-slate-600">Location: {displayValue(profile.location)}</p>
-              <p className="text-sm text-slate-600">Height: {profile.height ? `${profile.height} cm` : 'Not provided'}</p>
-              <p className="text-sm text-slate-600">Marital Status: {displayValue(profile.maritalStatus)}</p>
+              <h3 className="font-semibold text-slate-800">{t('profile.basicInfo')}</h3>
+              <p className="text-sm text-slate-600">{t('profile.age')}: {displayValue(profile.age, t('profile.noValue'))}</p>
+              <p className="text-sm text-slate-600">{t('profile.gender')}: {displayValue(profile.gender, t('profile.noValue'))}</p>
+              <p className="text-sm text-slate-600">{t('profile.location')}: {displayValue(profile.location, t('profile.noValue'))}</p>
+              <p className="text-sm text-slate-600">{t('profile.height')}: {profile.height ? `${profile.height} cm` : t('profile.noValue')}</p>
+              <p className="text-sm text-slate-600">{t('profile.maritalStatus')}: {displayValue(profile.maritalStatus, t('profile.noValue'))}</p>
             </div>
             <div>
-              <h3 className="font-semibold text-slate-800">Professional</h3>
-              <p className="text-sm text-slate-600">Profession: {displayValue(profile.profession)}</p>
-              <p className="text-sm text-slate-600">Education: {displayValue(profile.education)}</p>
-              <p className="text-sm text-slate-600">Language: {displayValue(profile.language)}</p>
+              <h3 className="font-semibold text-slate-800">{t('profile.professional')}</h3>
+              <p className="text-sm text-slate-600">{t('profile.profession')}: {displayValue(profile.profession, t('profile.noValue'))}</p>
+              <p className="text-sm text-slate-600">{t('profile.education')}: {displayValue(profile.education, t('profile.noValue'))}</p>
+              <p className="text-sm text-slate-600">{t('profile.language')}: {displayValue(profile.language, t('profile.noValue'))}</p>
             </div>
           </div>
 
           {/* Bio */}
           <div>
-            <h3 className="font-semibold text-slate-800">About Me</h3>
-            <p className="text-sm text-slate-600">{displayValue(profile.bio)}</p>
+            <h3 className="font-semibold text-slate-800">{t('profile.aboutMe')}</h3>
+            <p className="text-sm text-slate-600">{displayValue(profile.bio, t('profile.noValue'))}</p>
           </div>
 
           {/* Interests */}
           <div>
-            <h3 className="font-semibold text-slate-800">Interests</h3>
+            <h3 className="font-semibold text-slate-800">{t('profile.interests')}</h3>
             {interests.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {interests.map((interest, index) => (
@@ -121,29 +123,29 @@ const ProfileModal = ({ profile, isOpen, onClose }) => {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-slate-600">Not provided</p>
+              <p className="text-sm text-slate-600">{t('profile.noValue')}</p>
             )}
           </div>
 
           {/* Family & Preferences */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <h3 className="font-semibold text-slate-800">Family</h3>
-              <p className="text-sm text-slate-600">Religion: {displayValue(profile.religion)}</p>
-              <p className="text-sm text-slate-600">Caste: {displayValue(profile.caste)}</p>
+              <h3 className="font-semibold text-slate-800">{t('profile.family')}</h3>
+              <p className="text-sm text-slate-600">{t('profile.religion')}: {displayValue(profile.religion, t('profile.noValue'))}</p>
+              <p className="text-sm text-slate-600">{t('profile.caste')}: {displayValue(profile.caste, t('profile.noValue'))}</p>
             </div>
             <div>
-              <h3 className="font-semibold text-slate-800">Partner Preferences</h3>
-              <p className="text-sm text-slate-600">Min Age: {displayValue(profile.partnerPreferences?.minAge)}</p>
-              <p className="text-sm text-slate-600">Max Age: {displayValue(profile.partnerPreferences?.maxAge)}</p>
-              <p className="text-sm text-slate-600">Location: {displayValue(profile.partnerPreferences?.location)}</p>
+              <h3 className="font-semibold text-slate-800">{t('profile.partnerPreferences')}</h3>
+              <p className="text-sm text-slate-600">{t('profile.minAge')}: {displayValue(profile.partnerPreferences?.minAge, t('profile.noValue'))}</p>
+              <p className="text-sm text-slate-600">{t('profile.maxAge')}: {displayValue(profile.partnerPreferences?.maxAge, t('profile.noValue'))}</p>
+              <p className="text-sm text-slate-600">{t('profile.partnerLocation')}: {displayValue(profile.partnerPreferences?.location, t('profile.noValue'))}</p>
             </div>
           </div>
 
           {/* Willing to relocate */}
           {profile.willingToRelocate && (
             <div className="rounded-lg bg-green-50 p-4">
-              <p className="text-sm text-green-700">✈️ Willing to relocate</p>
+              <p className="text-sm text-green-700">✈️ {t('profile.willingToRelocate')}</p>
             </div>
           )}
         </div>

@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { db } from '../services/firebase';
 import {
   getChatsForUser,
@@ -86,6 +87,7 @@ const ChatSkeleton = () => (
 
 const Chat = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [chats, setChats] = useState([]);
   const [selectedChatId, setSelectedChatId] = useState('');
   const [selectedProfile, setSelectedProfile] = useState(null);
@@ -342,7 +344,7 @@ const Chat = () => {
         <div className="mx-auto max-w-7xl">
           <h2 className="flex items-center gap-2 text-xl font-semibold text-slate-800">
             <ChatIcon className="h-5 w-5 text-indigo-600" />
-            Chat Page
+            {t('chat.pageTitle')}
           </h2>
         </div>
       </div>
@@ -355,7 +357,7 @@ const Chat = () => {
           }`}
         >
           <div className="border-b border-slate-200 p-4">
-            <h3 className="text-lg font-semibold text-slate-800">Messages</h3>
+            <h3 className="text-lg font-semibold text-slate-800">{t('chat.messages')}</h3>
             <p className="mt-1 text-xs text-slate-500">
               {chats.length} chat{chats.length !== 1 ? 's' : ''}
             </p>
@@ -395,7 +397,7 @@ const Chat = () => {
             ) : (
               <div className="flex h-full items-center justify-center p-4">
                 <p className="text-center text-sm text-slate-500">
-                  No chats yet. Accept interests to start chatting!
+                  {t('chat.noChats')}
                 </p>
               </div>
             )}
@@ -506,8 +508,8 @@ const Chat = () => {
                     onClick={handleImageClick}
                     disabled={sending}
                     className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-600 transition hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50"
-                    title="Attach image"
-                    aria-label="Attach image"
+                      title={t('chat.attachImage')}
+                      aria-label={t('chat.attachImage')}
                   >
                     <AttachmentIcon className="h-4.5 w-4.5" />
                   </button>
@@ -517,8 +519,8 @@ const Chat = () => {
                     onClick={toggleVoiceRecording}
                     disabled={sending || !voiceSupported}
                     className={`inline-flex h-10 w-10 items-center justify-center rounded-full text-white transition disabled:opacity-50 ${recording ? 'bg-rose-600 hover:bg-rose-700' : 'bg-slate-800 hover:bg-slate-900'}`}
-                    title={recording ? 'Stop recording and send voice note' : 'Record voice note'}
-                    aria-label={recording ? 'Stop recording and send voice note' : 'Record voice note'}
+                    title={recording ? t('chat.stopVoice') : t('chat.recordVoice')}
+                    aria-label={recording ? t('chat.stopVoice') : t('chat.recordVoice')}
                   >
                     {recording ? <StopIcon className="h-4.5 w-4.5" /> : <MicIcon className="h-4.5 w-4.5" />}
                   </button>
@@ -527,8 +529,8 @@ const Chat = () => {
                     type="button"
                     onClick={() => messageInputRef.current?.focus()}
                     className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
-                    title="Focus message box"
-                    aria-label="Focus message box"
+                    title={t('chat.focusMessageBox')}
+                    aria-label={t('chat.focusMessageBox')}
                   >
                     <KeyboardIcon className="h-4.5 w-4.5" />
                   </button>
@@ -547,7 +549,7 @@ const Chat = () => {
                 <div className="flex gap-2">
                   <textarea
                     ref={messageInputRef}
-                    placeholder="Write a message..."
+                    placeholder={t('chat.writeMessage')}
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value)}
                     onKeyDown={handleInputKeyDown}
@@ -567,21 +569,21 @@ const Chat = () => {
                     ) : (
                       <>
                         <SendIcon className="h-4 w-4" />
-                        <span>Send</span>
+                        <span>{t('chat.send')}</span>
                       </>
                     )}
                   </button>
                 </div>
-                <p className="mt-2 text-xs text-slate-400">Press Enter to send • Shift+Enter for a new line</p>
+                <p className="mt-2 text-xs text-slate-400">{t('chat.pressEnter')}</p>
               </form>
             </div>
           ) : (
             <div className="flex h-full items-center justify-center">
               <div className="text-center">
                 <ChatIcon className="mx-auto mb-3 h-10 w-10 text-slate-300" />
-                <p className="font-medium text-slate-600">Select a chat to start messaging</p>
+                <p className="font-medium text-slate-600">{t('chat.selectChat')}</p>
                 <p className="text-slate-400 text-sm mt-2">
-                  {chats.length === 0 ? 'No active chats' : 'Choose a conversation from the list'}
+                  {chats.length === 0 ? t('chat.noActiveChats') : t('chat.chooseConversation')}
                 </p>
               </div>
             </div>

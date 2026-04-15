@@ -3,6 +3,7 @@ import { useState } from 'react';
 const ProfileCard = ({
   profile,
   matchScore,
+  labels = {},
   onLike,
   onUnlike,
   onSkip,
@@ -16,7 +17,7 @@ const ProfileCard = ({
   showUnlike,
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const actionLabel = showUnlike ? '💔 Unlike' : '❤️ Like';
+  const actionLabel = showUnlike ? labels.unlikeLabel || '💔 Unlike' : labels.likeLabel || '❤️ Like';
   const canLike = typeof onLike === 'function' || typeof onUnlike === 'function';
   const canSendInterest = typeof onSendInterest === 'function';
   const canViewDetails = typeof onViewDetails === 'function';
@@ -59,7 +60,7 @@ const ProfileCard = ({
                {/* Match / Trust / Verified */}
                <div className="mt-2 flex flex-wrap items-center gap-2">
                  <span className="inline-flex w-max shrink-0 whitespace-nowrap rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                   {matchScore?.score ?? 0}% Match
+                  {labels.matchLabel ? labels.matchLabel.replace('{score}', matchScore?.score ?? 0) : `${matchScore?.score ?? 0}% Match`}
                  </span>
                  {profile.isVerified && (
                    <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">
@@ -105,7 +106,7 @@ const ProfileCard = ({
               onClick={() => onSendInterest(profile)}
               className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
             >
-              💌 Send Interest
+              {labels.sendInterestLabel || '💌 Send Interest'}
             </button>
           )}
         </div>
@@ -132,7 +133,7 @@ const ProfileCard = ({
                 }}
                 className="w-full px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50"
               >
-                View details
+                {labels.viewDetailsLabel || 'View details'}
               </button>
             )}
             {canLike && !showUnlike && (
@@ -144,7 +145,7 @@ const ProfileCard = ({
                 }}
                 className="w-full px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50"
               >
-                Like
+                {labels.likeLabel || 'Like'}
               </button>
             )}
             {canSkip && (
@@ -156,7 +157,7 @@ const ProfileCard = ({
                 }}
                 className="w-full px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50"
               >
-                Skip
+                {labels.skipLabel || 'Skip'}
               </button>
             )}
             {showUnlike && isLiked && (
@@ -168,7 +169,7 @@ const ProfileCard = ({
                 }}
                 className="w-full px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50"
               >
-                Unlike
+                {labels.unlikeLabel || 'Unlike'}
               </button>
             )}
             {canBlock && (isBlocked ? (
@@ -180,7 +181,7 @@ const ProfileCard = ({
                 }}
                 className="w-full px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50"
               >
-                Unblock
+                {labels.unblockLabel || 'Unblock'}
               </button>
             ) : (
               <button
@@ -191,7 +192,7 @@ const ProfileCard = ({
                 }}
                 className="w-full px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50"
               >
-                Block
+                {labels.blockLabel || 'Block'}
               </button>
             ))}
             {canReport && (
@@ -203,7 +204,7 @@ const ProfileCard = ({
                 }}
                 className="w-full px-4 py-3 text-left text-sm text-red-600 transition hover:bg-slate-50"
               >
-                Report
+                {labels.reportLabel || 'Report'}
               </button>
             )}
           </div>

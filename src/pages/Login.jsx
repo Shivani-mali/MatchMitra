@@ -4,9 +4,11 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { db } from '../services/firebase';
 import { useAuth } from '../context/AuthContext';
 import Loader from '../components/Loader';
+import { useLanguage } from '../context/LanguageContext';
 
 const Login = () => {
   const { loginWithEmail, loginWithGoogle } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState('');
@@ -60,19 +62,19 @@ const Login = () => {
   };
 
   if (loading) {
-    return <Loader message="Logging in..." />;
+    return <Loader message={t('auth.loggingIn')} />;
   }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
       <section className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg">
-        <h1 className="text-2xl font-bold text-slate-800">Login to MatchMitra</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t('login.title')}</h1>
         <p className="mt-1 text-sm text-slate-500">Because every match matters 💫</p>
 
         <form onSubmit={submitLogin} className="mt-6 space-y-3">
           <input
             type="email"
-            placeholder="Email"
+            placeholder={t('auth.email')}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             className="w-full rounded-lg border border-slate-200 px-3 py-2"
@@ -80,7 +82,7 @@ const Login = () => {
           />
           <input
             type="password"
-            placeholder="Password"
+            placeholder={t('auth.password')}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             className="w-full rounded-lg border border-slate-200 px-3 py-2"
@@ -92,7 +94,7 @@ const Login = () => {
             disabled={loading}
             className="w-full rounded-lg bg-indigo-600 px-3 py-2 font-medium text-white hover:bg-indigo-700 disabled:opacity-70"
           >
-            Login
+            {t('nav.dashboard')}
           </button>
         </form>
 
@@ -102,13 +104,13 @@ const Login = () => {
           disabled={loading}
           className="mt-3 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 font-medium text-slate-700 hover:bg-slate-50"
         >
-          Continue with Google
+          {t('auth.continueGoogle')}
         </button>
 
         <p className="mt-4 text-center text-sm text-slate-600">
-          No account?{' '}
+          {t('auth.noAccount')}{' '}
           <Link to="/signup" className="font-medium text-indigo-600 hover:underline">
-            Sign up
+            {t('auth.signUp')}
           </Link>
         </p>
       </section>

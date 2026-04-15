@@ -1,5 +1,6 @@
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { useLanguage } from '../context/LanguageContext';
 
 const testimonials = [
   {
@@ -50,12 +51,13 @@ const TestimonialCard = ({ item }) => (
 );
 
 const Testimonials = () => {
+  const { t } = useLanguage();
   return (
     <div className="min-h-screen bg-slate-100">
       <Navbar />
       <main className="mx-auto max-w-6xl px-4 py-6 md:px-6">
         <section className="rounded-3xl border border-slate-200 bg-white px-5 py-6 shadow-sm md:px-6 md:py-8">
-          <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">Our Satisfied Customers</p>
+          <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">{t('nav.testimonials')}</p>
           <h1 className="mt-2 text-3xl font-bold text-slate-900">What happy couples and users say</h1>
           <p className="mt-2 max-w-3xl text-sm text-slate-500">
             A simple wall of comments to show trust, satisfaction, and real user experiences.

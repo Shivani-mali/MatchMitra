@@ -6,6 +6,7 @@ import ProfileModal from '../components/ProfileModal';
 import ProfileCard from '../components/ProfileCard';
 import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import {
   blockUser,
   calculateMatchScore,
@@ -55,7 +56,7 @@ const MatchesSkeleton = () => (
   </main>
 );
 
-const InterestRequestCard = ({ interest, senderProfile, onAction }) => {
+const InterestRequestCard = ({ interest, senderProfile, onAction, labels = {} }) => {
   const isPending = interest.status === 'pending';
 
   return (
@@ -68,7 +69,7 @@ const InterestRequestCard = ({ interest, senderProfile, onAction }) => {
         />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-slate-900">{senderProfile?.name || 'Unknown User'}</p>
-          <p className="text-xs text-slate-500">{senderProfile?.profession || 'Match request received'}</p>
+          <p className="text-xs text-slate-500">{senderProfile?.profession || labels.receivedLabel || 'Match request received'}</p>
         </div>
         <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${
           interest.status === 'pending'
@@ -88,14 +89,14 @@ const InterestRequestCard = ({ interest, senderProfile, onAction }) => {
             onClick={() => onAction(interest, 'accepted')}
             className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700"
           >
-            Accept
+            {labels.acceptLabel || 'Accept'}
           </button>
           <button
             type="button"
             onClick={() => onAction(interest, 'rejected')}
             className="rounded-full bg-rose-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-rose-700"
           >
-            Reject
+            {labels.rejectLabel || 'Reject'}
           </button>
         </div>
       )}
@@ -103,7 +104,7 @@ const InterestRequestCard = ({ interest, senderProfile, onAction }) => {
   );
 };
 
-const ActivityProfileCard = ({ profile, label, tone = 'slate' }) => {
+const ActivityProfileCard = ({ profile, label, tone = 'slate', labels = {} }) => {
   const toneClasses = tone === 'rose'
     ? 'bg-rose-100 text-rose-700'
     : 'bg-indigo-100 text-indigo-700';
@@ -118,7 +119,7 @@ const ActivityProfileCard = ({ profile, label, tone = 'slate' }) => {
         />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-slate-900">{profile?.name || 'Unknown User'}</p>
-          <p className="truncate text-xs text-slate-500">{profile?.profession || 'Profile activity'}</p>
+          <p className="truncate text-xs text-slate-500">{profile?.profession || labels.activityLabel || 'Profile activity'}</p>
         </div>
         <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${toneClasses}`}>
           {label}
@@ -130,6 +131,7 @@ const ActivityProfileCard = ({ profile, label, tone = 'slate' }) => {
 
 const Matches = () => {
   const { user, profile: currentProfile } = useAuth();
+  const { t } = useLanguage();
   const [filters, setFilters] = useState({
     minAge: '',
     maxAge: '',
@@ -193,12 +195,12 @@ const Matches = () => {
             profilesError: profilesResult.status === 'rejected' ? profilesResult.reason : null,
             profileError: profileResult.status === 'rejected' ? profileResult.reason : null,
           });
-          toast.error('Some matches data could not be loaded.', { id: 'matches-load-error' });
+          toast.error(t('matches.partialLoadError'), { id: 'matches-load-error' });
         }
 
       } catch (error) {
         console.error('Error loading matches data:', error);
-        toast.error('Unable to load matches right now.', { id: 'matches-load-error' });
+        toast.error(t('matches.loadingError'), { id: 'matches-load-error' });
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -248,13 +250,13 @@ const Matches = () => {
     if (!user?.uid) return;
     try {
       await sendInterest({ fromUid: user.uid, toUid: profile.uid });
-      setStatus(`Interest sent to ${profile.name}!`);
-      toast.success(`Interest sent to ${profile.name}`);
+      setStatus(t('matches.interestSent', { name: profile.name }));
+      toast.success(t('matches.interestSent', { name: profile.name }));
       setTimeout(() => setStatus(''), 3000);
     } catch (error) {
       console.error('Error sending interest:', error);
-      toast.error('Failed to send interest. Try again.');
-      setStatus('Failed to send interest. Try again.');
+      toast.error(t('matches.failedInterest'));
+      setStatus(t('matches.failedInterest'));
     }
   };
 
@@ -263,15 +265,15 @@ const Matches = () => {
 
     try {
       const isMatch = await likeUser(user.uid, profile.uid);
-      const message = isMatch ? `It's a match with ${profile.name}!` : `Liked ${profile.name}`;
+      const message = isMatch ? t('matches.matchWith', { name: profile.name }) : t('matches.liked', { name: profile.name });
       setStatus(message);
       toast.success(message);
       setLikedUsers((prev) => (prev.includes(profile.uid) ? prev : [profile.uid, ...prev]));
       setTimeout(() => setStatus(''), 3000);
     } catch (error) {
       console.error('Error liking user:', error);
-      toast.error('Failed to like profile. Try again.');
-      setStatus('Failed to like profile. Try again.');
+      toast.error(t('matches.failedLike'));
+      setStatus(t('matches.failedLike'));
     }
   };
 
@@ -279,14 +281,15 @@ const Matches = () => {
     if (!user?.uid) return;
     try {
       await reportUser({ reporterUid: user.uid, reportedUid: profile.uid, reason: 'Suspicious behavior' });
-      setStatus(`Reported ${profile.name}. Our team will review.`);
-      toast.success(`Reported ${profile.name}`);
+      const reportMessage = t('matches.reportedByTeam', { name: profile.name });
+      setStatus(reportMessage);
+      toast.success(reportMessage);
       setReportedUsers((prev) => (prev.includes(profile.uid) ? prev : [profile.uid, ...prev]));
       setTimeout(() => setStatus(''), 3000);
     } catch (error) {
       console.error('Error reporting user:', error);
-      toast.error('Failed to report. Try again.');
-      setStatus('Failed to report. Try again.');
+      toast.error(t('matches.failedReport'));
+      setStatus(t('matches.failedReport'));
     }
   };
 
@@ -303,13 +306,13 @@ const Matches = () => {
 
       setProfiles((prev) => prev.filter((item) => item.uid !== profile.uid));
 
-      setStatus('User blocked.');
-      toast.success('User blocked');
+      setStatus(t('matches.userBlocked'));
+      toast.success(t('matches.userBlocked'));
       setTimeout(() => setStatus(''), 3000);
     } catch (error) {
       console.error('Error blocking user:', error);
-      toast.error('Failed to block user. Try again.');
-      setStatus('Failed to block user. Try again.');
+      toast.error(t('matches.failedBlock'));
+      setStatus(t('matches.failedBlock'));
     }
   };
 
@@ -334,13 +337,13 @@ const Matches = () => {
 
       const interestsData = await getInterestsForUser(user.uid);
       setInterests(interestsData);
-      setStatus(nextStatus === 'accepted' ? 'Interest accepted. Chat created.' : 'Interest rejected.');
-      toast.success(nextStatus === 'accepted' ? 'Interest accepted. Chat created.' : 'Interest rejected.');
+      setStatus(nextStatus === 'accepted' ? t('matches.interestAccepted') : t('matches.interestRejected'));
+      toast.success(nextStatus === 'accepted' ? t('matches.interestAccepted') : t('matches.interestRejected'));
       setTimeout(() => setStatus(''), 3000);
     } catch (error) {
       console.error('Error handling interest action:', error);
-      toast.error('Could not update interest. Try again.');
-      setStatus('Could not update interest. Try again.');
+      toast.error(t('matches.failedUpdateInterest'));
+      setStatus(t('matches.failedUpdateInterest'));
     }
   };
 
@@ -351,7 +354,7 @@ const Matches = () => {
         <div className="mx-auto max-w-6xl">
           <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-800">
             <MatchIcon className="h-5 w-5 text-indigo-600" />
-            Matches
+            {t('matches.title')}
           </h2>
         </div>
       </div>
@@ -360,14 +363,12 @@ const Matches = () => {
       ) : (
       <main className="mx-auto max-w-6xl space-y-6 p-4 md:p-6">
         <section className="rounded-3xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
-          <h1 className="text-2xl font-semibold text-slate-900">Find Matches</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Browse compatible profiles, apply filters, and manage incoming interest requests.
-          </p>
+          <h1 className="text-2xl font-semibold text-slate-900">{t('matches.find')}</h1>
+          <p className="mt-1 text-sm text-slate-500">{t('matches.subtitle')}</p>
         </section>
 
         <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Filter Profiles</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{t('matches.filterProfiles')}</h2>
           <div className="mt-3">
             <FilterBar filters={filters} setFilters={setFilters} />
           </div>
@@ -376,8 +377,8 @@ const Matches = () => {
         {status && <p className="rounded-lg bg-indigo-50 px-3 py-2 text-sm text-indigo-700">{status}</p>}
 
         <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-          <h2 className="text-lg font-semibold text-slate-900">Interests Received</h2>
-          <p className="mt-1 text-sm text-slate-500">Accept to unlock chat, or reject to decline.</p>
+          <h2 className="text-lg font-semibold text-slate-900">{t('matches.interestsReceived')}</h2>
+          <p className="mt-1 text-sm text-slate-500">{t('matches.interestsHelp')}</p>
 
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             {interests.received.length > 0 ? (
@@ -389,46 +390,47 @@ const Matches = () => {
                     interest={interest}
                     senderProfile={senderProfile}
                     onAction={handleInterestAction}
+                    labels={{ acceptLabel: t('matches.accept'), rejectLabel: t('matches.reject'), receivedLabel: t('matches.sentYouInterest') }}
                   />
                 );
               })
             ) : (
               <div className="md:col-span-2 rounded-2xl border border-dashed border-slate-200 p-6 text-center">
-                <p className="text-sm text-slate-500">No interests received yet.</p>
+                <p className="text-sm text-slate-500">{t('matches.noInterests')}</p>
               </div>
             )}
           </div>
         </section>
 
         <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-          <h2 className="text-lg font-semibold text-slate-900">Liked Profiles</h2>
-          <p className="mt-1 text-sm text-slate-500">People you liked will appear here.</p>
+          <h2 className="text-lg font-semibold text-slate-900">{t('matches.likedProfiles')}</h2>
+          <p className="mt-1 text-sm text-slate-500">{t('matches.likedHelp')}</p>
 
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             {likedProfiles.length > 0 ? (
               likedProfiles.map((profile) => (
-                <ActivityProfileCard key={profile.uid} profile={profile} label="liked" tone="indigo" />
+                <ActivityProfileCard key={profile.uid} profile={profile} label={t('matches.likedProfiles')} tone="indigo" labels={{ activityLabel: t('matches.unknownUser') }} />
               ))
             ) : (
               <div className="md:col-span-2 rounded-2xl border border-dashed border-slate-200 p-6 text-center">
-                <p className="text-sm text-slate-500">No liked profiles yet.</p>
+                <p className="text-sm text-slate-500">{t('matches.noLiked')}</p>
               </div>
             )}
           </div>
         </section>
 
         <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-          <h2 className="text-lg font-semibold text-slate-900">Reported Profiles</h2>
-          <p className="mt-1 text-sm text-slate-500">People you reported are listed here.</p>
+          <h2 className="text-lg font-semibold text-slate-900">{t('matches.reportedProfiles')}</h2>
+          <p className="mt-1 text-sm text-slate-500">{t('matches.reportedHelp')}</p>
 
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             {reportedProfiles.length > 0 ? (
               reportedProfiles.map((profile) => (
-                <ActivityProfileCard key={profile.uid} profile={profile} label="reported" tone="rose" />
+                <ActivityProfileCard key={profile.uid} profile={profile} label={t('matches.reportedProfiles')} tone="rose" labels={{ activityLabel: t('matches.unknownUser') }} />
               ))
             ) : (
               <div className="md:col-span-2 rounded-2xl border border-dashed border-slate-200 p-6 text-center">
-                <p className="text-sm text-slate-500">No reported profiles.</p>
+                <p className="text-sm text-slate-500">{t('matches.noReported')}</p>
               </div>
             )}
           </div>
@@ -436,8 +438,8 @@ const Matches = () => {
 
         <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
           <div className="mb-4">
-            <h2 className="text-lg font-semibold text-slate-900">Recommended Profiles</h2>
-            <p className="mt-1 text-sm text-slate-500">Based on your current filters and profile preferences.</p>
+            <h2 className="text-lg font-semibold text-slate-900">{t('matches.recommendedProfiles')}</h2>
+            <p className="mt-1 text-sm text-slate-500">{t('matches.recommendedHelp')}</p>
           </div>
 
           {filteredProfiles.length > 0 ? (
@@ -447,6 +449,17 @@ const Matches = () => {
                   key={profile.uid}
                   profile={profile}
                   matchScore={calculateMatchScore(currentProfile || {}, profile)}
+                  labels={{
+                    matchLabel: t('matches.matchPercent', { score: calculateMatchScore(currentProfile || {}, profile).score }),
+                    sendInterestLabel: t('matches.sendInterest'),
+                    likeLabel: t('matches.like'),
+                    unlikeLabel: t('matches.unlike'),
+                    viewDetailsLabel: t('matches.viewDetails'),
+                    skipLabel: t('matches.skip'),
+                    blockLabel: t('matches.block'),
+                    unblockLabel: t('matches.unblock'),
+                    reportLabel: t('matches.report'),
+                  }}
                   onLike={handleLikeUser}
                   onSendInterest={handleSendInterest}
                   onViewDetails={handleViewDetails}
@@ -458,7 +471,7 @@ const Matches = () => {
             </div>
           ) : (
             <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center">
-              <p className="text-sm text-slate-500">No matches found.</p>
+              <p className="text-sm text-slate-500">{t('matches.noMatches')}</p>
             </div>
           )}
         </section>

@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const navItems = [
-  { to: '/dashboard', label: 'Dashboard' },
-  { to: '/matches', label: 'Matches' },
-  { to: '/profile', label: 'Profile' },
-  { to: '/chat', label: 'Chat' },
-  { to: '/testimonials', label: 'Testimonials' },
+  { to: '/dashboard', labelKey: 'nav.dashboard' },
+  { to: '/matches', labelKey: 'nav.matches' },
+  { to: '/profile', labelKey: 'nav.profile' },
+  { to: '/chat', labelKey: 'nav.chat' },
+  { to: '/testimonials', labelKey: 'nav.testimonials' },
 ];
 
 const Navbar = () => {
   const { logout } = useAuth();
+  const { language, setLanguage, t, supportedLanguages } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -67,9 +69,27 @@ const Navbar = () => {
                 to={item.to}
                 className={getNavItemClassName}
               >
-                {item.label}
+                {t(item.labelKey)}
               </NavLink>
             ))}
+
+            <div className="hidden items-center gap-2 pl-2 md:flex">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {t('language.label')}
+              </span>
+              <select
+                value={language}
+                onChange={(event) => setLanguage(event.target.value)}
+                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none transition focus:border-indigo-300"
+                aria-label={t('language.label')}
+              >
+                {supportedLanguages.map((item) => (
+                  <option key={item.code} value={item.code}>
+                    {t(`language.${item.code === 'en' ? 'english' : item.code === 'hi' ? 'hindi' : 'marathi'}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -97,7 +117,7 @@ const Navbar = () => {
               onClick={handleLogout}
               className="hidden rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 md:inline-flex"
             >
-              Logout
+              {t('nav.logout')}
             </button>
           </div>
         </div>
@@ -113,16 +133,32 @@ const Navbar = () => {
                 to={item.to}
                 className={getMobileNavItemClassName}
               >
-                {item.label}
+                {t(item.labelKey)}
               </NavLink>
             ))}
+
+            <label className="mt-2 flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">
+              <span>{t('language.label')}</span>
+              <select
+                value={language}
+                onChange={(event) => setLanguage(event.target.value)}
+                className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-sm outline-none"
+                aria-label={t('language.label')}
+              >
+                {supportedLanguages.map((item) => (
+                  <option key={item.code} value={item.code}>
+                    {t(`language.${item.code === 'en' ? 'english' : item.code === 'hi' ? 'hindi' : 'marathi'}`)}
+                  </option>
+                ))}
+              </select>
+            </label>
 
             <button
               type="button"
               onClick={handleLogout}
               className="mt-1 w-full rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
             >
-              Logout
+              {t('nav.logout')}
             </button>
           </div>
         )}

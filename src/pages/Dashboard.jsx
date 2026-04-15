@@ -5,6 +5,7 @@ import ProfileModal from '../components/ProfileModal';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import {
   calculateMatchScore,
   getAllProfiles,
@@ -92,7 +93,7 @@ const StatCard = ({ label, value, icon, tone = 'text-indigo-600', onClick }) => 
   </article>
 );
 
-const ProfileCard = ({ profile, onInterest }) => (
+const ProfileCard = ({ profile, onInterest, labels = {} }) => (
   <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
     <div className="flex items-start gap-3">
       <img
@@ -125,7 +126,7 @@ const ProfileCard = ({ profile, onInterest }) => (
             </div>
           </div>
           <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">
-            Match
+            {labels.matchLabel || 'Match'}
           </span>
         </div>
 
@@ -136,14 +137,14 @@ const ProfileCard = ({ profile, onInterest }) => (
           onClick={() => onInterest(profile.uid)}
           className="mt-4 inline-flex items-center rounded-full bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-indigo-700"
         >
-          Send Interest
+          {labels.sendInterestLabel || 'Send Interest'}
         </button>
       </div>
     </div>
   </article>
 );
 
-const InterestCard = ({ interest, profiles, onAction }) => {
+const InterestCard = ({ interest, profiles, onAction, labels = {} }) => {
   const senderProfile = profiles.find(p => p.uid === interest.fromUser);
   const isPending = interest.status === 'pending';
 
@@ -159,7 +160,7 @@ const InterestCard = ({ interest, profiles, onAction }) => {
           <p className="truncate text-sm font-semibold text-slate-900">
             {senderProfile?.name || 'Unknown User'}
           </p>
-          <p className="text-xs text-slate-500">Sent you an interest request</p>
+          <p className="text-xs text-slate-500">{labels.sentYouInterestLabel || 'Sent you an interest request'}</p>
         </div>
         <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${
           interest.status === 'pending'
@@ -179,14 +180,14 @@ const InterestCard = ({ interest, profiles, onAction }) => {
             onClick={() => onAction(interest, 'accepted')}
             className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700"
           >
-            Accept
+            {labels.acceptLabel || 'Accept'}
           </button>
           <button
             type="button"
             onClick={() => onAction(interest, 'rejected')}
             className="rounded-full bg-rose-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-rose-700"
           >
-            Reject
+            {labels.rejectLabel || 'Reject'}
           </button>
         </div>
       )}
@@ -215,7 +216,7 @@ const ChatCard = ({ chat }) => {
   );
 };
 
-const RecentViewedCard = ({ profile, onOpen }) => (
+const RecentViewedCard = ({ profile, onOpen, labels = {} }) => (
   <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
     <div className="flex items-center gap-3">
       <img
@@ -232,7 +233,7 @@ const RecentViewedCard = ({ profile, onOpen }) => (
         onClick={() => onOpen(profile)}
         className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-700"
       >
-        View
+        {labels.viewLabel || 'View'}
       </button>
     </div>
   </article>
@@ -258,6 +259,7 @@ const DashboardSkeleton = () => (
 
 const Dashboard = () => {
   const { user, profile } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [interests, setInterests] = useState({ received: [], sent: [] });
   const [suggestedMatches, setSuggestedMatches] = useState([]);
@@ -303,7 +305,7 @@ const Dashboard = () => {
         setRecentViewedProfiles(recentProfiles);
       } catch (error) {
         console.error('Failed to load dashboard data:', error);
-        toast.error('Unable to load dashboard right now.');
+        toast.error(t('matches.loadingError'));
       } finally {
         setLoading(false);
       }
@@ -318,10 +320,11 @@ const Dashboard = () => {
       await sendInterest({ fromUid: user.uid, toUid });
       const interestsData = await getInterestsForUser(user.uid);
       setInterests(interestsData);
-      toast.success('Interest sent successfully.');
+      const targetName = allProfiles.find((item) => item.uid === toUid)?.name || '';
+      toast.success(t('matches.interestSent', { name: targetName }));
     } catch (error) {
       console.error('Error sending interest:', error);
-      toast.error('Failed to send interest.');
+      toast.error(t('matches.failedInterest'));
     }
   };
 
@@ -330,10 +333,10 @@ const Dashboard = () => {
 
     try {
       const isMatch = await likeUser(user.uid, candidate.uid);
-      toast.success(isMatch ? `It's a match with ${candidate.name}!` : `Liked ${candidate.name}`);
+      toast.success(isMatch ? t('matches.matchWith', { name: candidate.name }) : t('matches.liked', { name: candidate.name }));
     } catch (error) {
       console.error('Error liking user:', error);
-      toast.error('Failed to like profile. Try again.');
+      toast.error(t('matches.failedLike'));
     }
   };
 
@@ -355,10 +358,10 @@ const Dashboard = () => {
     try {
       await blockUser(user.uid, candidate.uid);
       setSuggestedMatches((prev) => prev.filter((item) => item.uid !== candidate.uid));
-      toast.success('User blocked');
+      toast.success(t('matches.userBlocked'));
     } catch (error) {
       console.error('Error blocking suggested user:', error);
-      toast.error('Failed to block user.');
+      toast.error(t('matches.failedBlock'));
     }
   };
 
@@ -367,10 +370,10 @@ const Dashboard = () => {
 
     try {
       await reportUser({ reporterUid: user.uid, reportedUid: candidate.uid, reason: 'Suspicious behavior' });
-      toast.success('Profile reported');
+      toast.success(t('matches.reportedByTeam', { name: candidate.name }));
     } catch (error) {
       console.error('Error reporting suggested user:', error);
-      toast.error('Failed to report profile.');
+      toast.error(t('matches.failedReport'));
     }
   };
 
@@ -392,10 +395,10 @@ const Dashboard = () => {
 
       setInterests(interestsData);
       setChats(userChats);
-      toast.success(status === 'accepted' ? 'Interest accepted. Chat created.' : 'Interest rejected.');
+      toast.success(status === 'accepted' ? t('matches.interestAccepted') : t('matches.interestRejected'));
     } catch (error) {
       console.error(`Error updating interest to ${status}:`, error);
-      toast.error('Failed to update interest.');
+      toast.error(t('matches.failedUpdateInterest'));
     }
   };
 
@@ -406,7 +409,7 @@ const Dashboard = () => {
         <div className="mx-auto max-w-6xl">
           <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-800">
             <SparkIcon className="h-5 w-5 text-indigo-600" />
-            Dashboard
+            {t('dashboard.title')}
           </h2>
         </div>
       </div>
@@ -415,14 +418,12 @@ const Dashboard = () => {
       ) : (
       <main className="mx-auto max-w-6xl space-y-6 p-4 md:p-6">
         <section className="rounded-3xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
-          <h1 className="text-2xl font-semibold text-slate-900">Dashboard</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Track your journey to meaningful matches from one clean overview.
-          </p>
+          <h1 className="text-2xl font-semibold text-slate-900">{t('dashboard.title')}</h1>
+          <p className="mt-1 text-sm text-slate-500">{t('dashboard.subtitle')}</p>
            {/* Trust Score & Verified Badge */}
            <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
              <div className="flex items-center gap-2">
-               <span className="text-sm font-semibold text-slate-600">Your Profile:</span>
+               <span className="text-sm font-semibold text-slate-600">{t('dashboard.yourProfile')}:</span>
                {profile?.isVerified && (
                  <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
                    ✔️ Verified
@@ -431,7 +432,7 @@ const Dashboard = () => {
              </div>
              <div className="flex items-center gap-3">
                <div className="flex flex-col gap-1">
-                 <span className="text-xs font-semibold text-slate-600">Trust Score</span>
+                 <span className="text-xs font-semibold text-slate-600">{t('dashboard.trustScore')}</span>
                  <div className="flex items-center gap-2">
                    <span className="text-sm font-bold text-slate-900">{profile?.trustScore || 80}%</span>
                    <div className="h-2 w-32 overflow-hidden rounded-full bg-slate-200">
@@ -448,23 +449,23 @@ const Dashboard = () => {
 
         {/* Stats Cards */}
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <StatCard label="Profile Views" value={genuineProfileViews} icon={<EyeIcon className="h-5 w-5" />} />
+          <StatCard label={t('dashboard.profileViews')} value={genuineProfileViews} icon={<EyeIcon className="h-5 w-5" />} />
           <StatCard
-            label="Pending Interests"
+            label={t('dashboard.pendingInterests')}
             value={pendingInterestsCount}
             icon={<HeartIcon className="h-5 w-5" />}
             tone="text-rose-600"
             onClick={() => navigate('/matches')}
           />
           <StatCard
-            label="Accepted Matches"
+            label={t('dashboard.acceptedMatches')}
             value={acceptedMatchesCount}
             icon={<SparkIcon className="h-5 w-5" />}
             tone="text-violet-600"
             onClick={() => navigate('/matches')}
           />
           <StatCard
-            label="Active Chats"
+            label={t('dashboard.activeChats')}
             value={chats.length}
             icon={<ChatIcon className="h-5 w-5" />}
             tone="text-sky-600"
@@ -478,8 +479,8 @@ const Dashboard = () => {
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Interests Received</h2>
-                <p className="text-sm text-slate-500">Review requests and respond when ready.</p>
+                <h2 className="text-lg font-semibold text-slate-900">{t('dashboard.interestsReceived')}</h2>
+                <p className="text-sm text-slate-500">{t('dashboard.interestsSubtitle')}</p>
               </div>
             </div>
             <div className="space-y-3">
@@ -490,11 +491,12 @@ const Dashboard = () => {
                     interest={interest}
                     profiles={allProfiles}
                     onAction={handleInterestAction}
+                    labels={{ acceptLabel: t('matches.accept'), rejectLabel: t('matches.reject'), sentYouInterestLabel: t('matches.sentYouInterest') }}
                   />
                 ))
               ) : (
                 <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center">
-                  <p className="text-sm text-slate-500">No interests received yet.</p>
+                  <p className="text-sm text-slate-500">{t('dashboard.noInterests')}</p>
                 </div>
               )}
             </div>
@@ -503,7 +505,7 @@ const Dashboard = () => {
                 to="/matches"
                 className="mt-4 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-700"
               >
-                View all interests →
+                {t('dashboard.viewAllInterests')}
               </Link>
             )}
           </section>
@@ -511,10 +513,10 @@ const Dashboard = () => {
           {/* Suggested Matches */}
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-4">
-              <h2 className="text-lg font-semibold text-slate-900">Suggested Matches</h2>
-              <p className="text-sm text-slate-500">New people that fit your profile preferences.</p>
+              <h2 className="text-lg font-semibold text-slate-900">{t('dashboard.suggestedMatches')}</h2>
+              <p className="text-sm text-slate-500">{t('dashboard.suggestedSubtitle')}</p>
               <Link to="/matches" className="mt-2 inline-block text-sm font-semibold text-indigo-600 hover:text-indigo-700">
-                Open Matches page →
+                {t('dashboard.openMatches')}
               </Link>
             </div>
             <div className="space-y-3">
@@ -524,6 +526,17 @@ const Dashboard = () => {
                     key={match.uid}
                     profile={match}
                     matchScore={calculateMatchScore(profile || {}, match)}
+                    labels={{
+                      matchLabel: t('matches.matchPercent', { score: calculateMatchScore(profile || {}, match).score }),
+                      sendInterestLabel: t('dashboard.sendInterest'),
+                      likeLabel: t('matches.like'),
+                      unlikeLabel: t('matches.unlike'),
+                      viewDetailsLabel: t('matches.viewDetails'),
+                      skipLabel: t('matches.skip'),
+                      blockLabel: t('matches.block'),
+                      unblockLabel: t('matches.unblock'),
+                      reportLabel: t('matches.report'),
+                    }}
                     onLike={handleLikeUser}
                     onSendInterest={handleSendInterest}
                     onViewDetails={handleViewDetails}
@@ -533,7 +546,7 @@ const Dashboard = () => {
                 ))
               ) : (
                 <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center">
-                  <p className="text-sm text-slate-500">No matches available.</p>
+                  <p className="text-sm text-slate-500">{t('dashboard.noMatches')}</p>
                 </div>
               )}
             </div>
@@ -541,24 +554,24 @@ const Dashboard = () => {
               to="/matches"
               className="mt-4 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-700"
             >
-              View all matches →
+              {t('dashboard.viewAllMatches')}
             </Link>
           </section>
 
           {/* Recent Messages */}
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
             <div className="mb-4">
-              <h2 className="text-lg font-semibold text-slate-900">Recently Viewed</h2>
-              <p className="text-sm text-slate-500">Profiles you recently opened from cards.</p>
+              <h2 className="text-lg font-semibold text-slate-900">{t('dashboard.recentlyViewed')}</h2>
+              <p className="text-sm text-slate-500">{t('dashboard.recentlyViewedSubtitle')}</p>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               {recentViewedProfiles.length > 0 ? (
                 recentViewedProfiles.map((entry) => (
-                  <RecentViewedCard key={entry.uid} profile={entry} onOpen={handleViewDetails} />
+                  <RecentViewedCard key={entry.uid} profile={entry} onOpen={handleViewDetails} labels={{ viewLabel: t('dashboard.openRecentlyViewed') }} />
                 ))
               ) : (
                 <div className="col-span-2 rounded-2xl border border-dashed border-slate-200 p-6 text-center">
-                  <p className="text-sm text-slate-500">No recently viewed profiles yet.</p>
+                  <p className="text-sm text-slate-500">{t('dashboard.noRecentlyViewed')}</p>
                 </div>
               )}
             </div>
@@ -567,8 +580,8 @@ const Dashboard = () => {
           {/* Recent Messages */}
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
             <div className="mb-4">
-              <h2 className="text-lg font-semibold text-slate-900">Recent Messages</h2>
-              <p className="text-sm text-slate-500">A quick look at your latest conversations.</p>
+              <h2 className="text-lg font-semibold text-slate-900">{t('dashboard.recentMessages')}</h2>
+              <p className="text-sm text-slate-500">{t('dashboard.recentMessagesSubtitle')}</p>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               {chats.length > 0 ? (
@@ -577,7 +590,7 @@ const Dashboard = () => {
                 ))
               ) : (
                 <div className="col-span-2 rounded-2xl border border-dashed border-slate-200 p-6 text-center">
-                  <p className="text-sm text-slate-500">No active chats yet.</p>
+                  <p className="text-sm text-slate-500">{t('dashboard.noActiveChats')}</p>
                 </div>
               )}
             </div>
@@ -586,7 +599,7 @@ const Dashboard = () => {
                 to="/chat"
                 className="mt-4 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-700"
               >
-                View all chats →
+                {t('dashboard.viewAllChats')}
               </Link>
             )}
           </section>
