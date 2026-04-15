@@ -2,12 +2,16 @@ import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import FilterBar from '../components/FilterBar';
 import Navbar from '../components/Navbar';
+import ProfileModal from '../components/ProfileModal';
 import ProfileCard from '../components/ProfileCard';
 import { useAuth } from '../context/AuthContext';
 import {
+  blockUser,
   getAllProfiles,
+  getProfileByUid,
   getInterestsForUser,
   incrementProfileViews,
+  likeUser,
   reportUser,
   respondToInterest,
   sendInterest,
@@ -97,8 +101,10 @@ const Matches = () => {
   const [profiles, setProfiles] = useState([]);
   const [allProfiles, setAllProfiles] = useState([]);
   const [interests, setInterests] = useState({ received: [], sent: [] });
+  const [blockedUsers, setBlockedUsers] = useState([]);
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(true);
+  const [selectedProfile, setSelectedProfile] = useState(null);
 
   useEffect(() => {
     const loadProfiles = async () => {
@@ -110,15 +116,21 @@ const Matches = () => {
       setLoading(true);
 
       try {
-        const [profilesData, interestsData] = await Promise.all([
+        const [profilesData, interestsData, currentProfile] = await Promise.all([
           getAllProfiles(),
           getInterestsForUser(user.uid),
+          getProfileByUid(user.uid),
         ]);
 
-        const filtered = profilesData.filter((profile) => profile.uid !== user?.uid);
+        const blocked = currentProfile?.blockedUsers || [];
+        const filtered = profilesData.filter(
+          (profile) => profile.uid !== user?.uid && !blocked.includes(profile.uid)
+        );
+
         setAllProfiles(profilesData);
         setProfiles(filtered);
         setInterests(interestsData);
+        setBlockedUsers(blocked);
 
         await Promise.all(filtered.slice(0, 5).map((item) => incrementProfileViews(item.uid)));
       } catch (error) {
@@ -165,6 +177,22 @@ const Matches = () => {
     }
   };
 
+  const handleLikeUser = async (profile) => {
+    if (!user?.uid) return;
+
+    try {
+      const isMatch = await likeUser(user.uid, profile.uid);
+      const message = isMatch ? `It's a match with ${profile.name}!` : `Liked ${profile.name}`;
+      setStatus(message);
+      toast.success(message);
+      setTimeout(() => setStatus(''), 3000);
+    } catch (error) {
+      console.error('Error liking user:', error);
+      toast.error('Failed to like profile. Try again.');
+      setStatus('Failed to like profile. Try again.');
+    }
+  };
+
   const handleReportUser = async (profile) => {
     if (!user?.uid) return;
     try {
@@ -177,6 +205,33 @@ const Matches = () => {
       toast.error('Failed to report. Try again.');
       setStatus('Failed to report. Try again.');
     }
+  };
+
+  const handleBlockUser = async (profile) => {
+    if (!user?.uid) return;
+
+    try {
+      await blockUser(user.uid, profile.uid);
+
+      setBlockedUsers((prev) => {
+        if (prev.includes(profile.uid)) return prev;
+        return [...prev, profile.uid];
+      });
+
+      setProfiles((prev) => prev.filter((item) => item.uid !== profile.uid));
+
+      setStatus('User blocked.');
+      toast.success('User blocked');
+      setTimeout(() => setStatus(''), 3000);
+    } catch (error) {
+      console.error('Error blocking user:', error);
+      toast.error('Failed to block user. Try again.');
+      setStatus('Failed to block user. Try again.');
+    }
+  };
+
+  const handleViewDetails = (profile) => {
+    setSelectedProfile(profile);
   };
 
   const handleInterestAction = async (interest, nextStatus) => {
@@ -270,8 +325,12 @@ const Matches = () => {
                 <ProfileCard
                   key={profile.uid}
                   profile={profile}
+                  onLike={handleLikeUser}
                   onSendInterest={handleSendInterest}
+                  onViewDetails={handleViewDetails}
                   onReport={handleReportUser}
+                  onBlock={handleBlockUser}
+                  isBlocked={blockedUsers.includes(profile.uid)}
                 />
               ))}
             </div>
@@ -283,6 +342,12 @@ const Matches = () => {
         </section>
       </main>
       )}
+
+      <ProfileModal
+        profile={selectedProfile}
+        isOpen={Boolean(selectedProfile)}
+        onClose={() => setSelectedProfile(null)}
+      />
     </div>
   );
 };

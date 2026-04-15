@@ -9,6 +9,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Login = lazy(() => import('./pages/Login'));
 const Matches = lazy(() => import('./pages/Matches'));
 const Profile = lazy(() => import('./pages/Profile'));
+const Testimonials = lazy(() => import('./pages/Testimonials'));
 const Signup = lazy(() => import('./pages/Signup'));
 
 const HomeRedirect = () => {
@@ -64,6 +65,14 @@ function App() {
             element={
               <ProtectedRoute requireProfile>
                 <Chat />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/testimonials"
+            element={
+              <ProtectedRoute requireProfile>
+                <Testimonials />
               </ProtectedRoute>
             }
           />

@@ -164,8 +164,34 @@ export const getInterestsForUser = async (uid) => {
       getDocs(sentQuery),
     ]);
 
-    const receivedData = received.docs.map((entry) => ({ id: entry.id, ...entry.data() }));
-    const sentData = sent.docs.map((entry) => ({ id: entry.id, ...entry.data() }));
+    const pickLatest = (existing, candidate) => {
+      const getMillis = (value) => value?.toMillis?.() || 0;
+      const existingTime = Math.max(getMillis(existing.createdAt), getMillis(existing.updatedAt));
+      const candidateTime = Math.max(getMillis(candidate.createdAt), getMillis(candidate.updatedAt));
+      return candidateTime >= existingTime ? candidate : existing;
+    };
+
+    const dedupeInterests = (items, keySelector) => {
+      const map = new Map();
+
+      items.forEach((item) => {
+        const key = keySelector(item);
+        const existing = map.get(key);
+        map.set(key, existing ? pickLatest(existing, item) : item);
+      });
+
+      return Array.from(map.values());
+    };
+
+    const receivedData = dedupeInterests(
+      received.docs.map((entry) => ({ id: entry.id, ...entry.data() })),
+      (item) => `${item.fromUser}_${item.toUser}`,
+    );
+
+    const sentData = dedupeInterests(
+      sent.docs.map((entry) => ({ id: entry.id, ...entry.data() })),
+      (item) => `${item.fromUser}_${item.toUser}`,
+    );
 
     return {
       received: receivedData,

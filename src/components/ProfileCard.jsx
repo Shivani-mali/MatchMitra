@@ -17,10 +17,32 @@ const ProfileCard = ({
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const actionLabel = showUnlike ? '💔 Unlike' : '❤️ Like';
+  const canLike = typeof onLike === 'function' || typeof onUnlike === 'function';
+  const canSendInterest = typeof onSendInterest === 'function';
+  const canViewDetails = typeof onViewDetails === 'function';
+  const canSkip = typeof onSkip === 'function';
+  const canBlock = typeof onBlock === 'function' || typeof onUnblock === 'function';
+  const canReport = typeof onReport === 'function';
 
   return (
-    <article className="relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-md transition hover:shadow-lg">
-      <div className="flex gap-4 p-5">
+    <article
+      className="relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-md transition hover:shadow-lg"
+      role={canViewDetails ? 'button' : undefined}
+      tabIndex={canViewDetails ? 0 : undefined}
+      onClick={(event) => {
+        if (!canViewDetails) return;
+        if (event.target.closest('button')) return;
+        onViewDetails?.(profile);
+      }}
+      onKeyDown={(event) => {
+        if (!canViewDetails) return;
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onViewDetails?.(profile);
+        }
+      }}
+    >
+      <div className="flex gap-4 p-5 pr-16">
         <img
           src={profile.photo || profile.photoURL || 'https://placehold.co/120x120?text=User'}
           alt={profile.name || 'User'}
@@ -59,7 +81,7 @@ const ProfileCard = ({
               </p>
             </div>
             <div className="shrink-0 text-right">
-              <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+              <span className="inline-flex w-max shrink-0 whitespace-nowrap rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
                 {matchScore?.score ?? 0}% Match
               </span>
             </div>
@@ -68,29 +90,33 @@ const ProfileCard = ({
       </div>
 
       <div className="border-t border-slate-200 px-5 py-4">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <button
-            type="button"
-            onClick={() => (showUnlike ? onUnlike(profile) : onLike(profile))}
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white transition hover:bg-indigo-700"
-          >
-            {actionLabel}
-          </button>
-          <button
-            type="button"
-            onClick={() => onSendInterest(profile)}
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
-          >
-            💌 Send Interest
-          </button>
+        <div className={`grid gap-3 ${canLike && canSendInterest ? 'sm:grid-cols-2' : 'sm:grid-cols-1'}`}>
+          {canLike && (
+            <button
+              type="button"
+              onClick={() => (showUnlike ? onUnlike?.(profile) : onLike?.(profile))}
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white transition hover:bg-indigo-700"
+            >
+              {actionLabel}
+            </button>
+          )}
+          {canSendInterest && (
+            <button
+              type="button"
+              onClick={() => onSendInterest(profile)}
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
+            >
+              💌 Send Interest
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="absolute right-4 top-4">
+      <div className="absolute right-3 top-3 flex items-start gap-2">
         <button
           type="button"
           onClick={() => setMenuOpen((open) => !open)}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-100"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-100"
           aria-label="More actions"
         >
           ⋮
@@ -98,26 +124,42 @@ const ProfileCard = ({
 
         {menuOpen && (
           <div className="absolute right-0 top-11 z-10 w-40 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
-            <button
-              type="button"
-              onClick={() => {
-                onViewDetails(profile);
-                setMenuOpen(false);
-              }}
-              className="w-full px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50"
-            >
-              View details
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                onSkip(profile);
-                setMenuOpen(false);
-              }}
-              className="w-full px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50"
-            >
-              Skip
-            </button>
+            {canViewDetails && (
+              <button
+                type="button"
+                onClick={() => {
+                  onViewDetails(profile);
+                  setMenuOpen(false);
+                }}
+                className="w-full px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50"
+              >
+                View details
+              </button>
+            )}
+            {canLike && !showUnlike && (
+              <button
+                type="button"
+                onClick={() => {
+                  onLike?.(profile);
+                  setMenuOpen(false);
+                }}
+                className="w-full px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50"
+              >
+                Like
+              </button>
+            )}
+            {canSkip && (
+              <button
+                type="button"
+                onClick={() => {
+                  onSkip(profile);
+                  setMenuOpen(false);
+                }}
+                className="w-full px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50"
+              >
+                Skip
+              </button>
+            )}
             {showUnlike && isLiked && (
               <button
                 type="button"
@@ -130,11 +172,11 @@ const ProfileCard = ({
                 Unlike
               </button>
             )}
-            {isBlocked ? (
+            {canBlock && (isBlocked ? (
               <button
                 type="button"
                 onClick={() => {
-                  onUnblock(profile);
+                  onUnblock?.(profile);
                   setMenuOpen(false);
                 }}
                 className="w-full px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50"
@@ -145,24 +187,26 @@ const ProfileCard = ({
               <button
                 type="button"
                 onClick={() => {
-                  onBlock(profile);
+                  onBlock?.(profile);
                   setMenuOpen(false);
                 }}
                 className="w-full px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50"
               >
                 Block
               </button>
+            ))}
+            {canReport && (
+              <button
+                type="button"
+                onClick={() => {
+                  onReport(profile);
+                  setMenuOpen(false);
+                }}
+                className="w-full px-4 py-3 text-left text-sm text-red-600 transition hover:bg-slate-50"
+              >
+                Report
+              </button>
             )}
-            <button
-              type="button"
-              onClick={() => {
-                onReport(profile);
-                setMenuOpen(false);
-              }}
-              className="w-full px-4 py-3 text-left text-sm text-red-600 transition hover:bg-slate-50"
-            >
-              Report
-            </button>
           </div>
         )}
       </div>

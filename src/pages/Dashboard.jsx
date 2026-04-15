@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import ChatbotWidget from '../components/ChatbotWidget';
+import ProfileModal from '../components/ProfileModal';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -9,9 +9,13 @@ import {
   getChatsForUser,
   getInterestsForUser,
   getSuggestedMatches,
+  blockUser,
+  likeUser,
+  reportUser,
   respondToInterest,
   sendInterest,
 } from '../services/firestoreService';
+import MatchProfileCard from '../components/ProfileCard';
 
 const EyeIcon = ({ className = '' }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className} aria-hidden="true">
@@ -68,6 +72,22 @@ const ProfileCard = ({ profile, onInterest }) => (
             <p className="mt-0.5 text-sm text-slate-500">
               {profile.age} • {profile.location}
             </p>
+            <div className="mt-2 flex items-center gap-2">
+              {profile.isVerified && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-[11px] font-semibold text-green-700">
+                  ✔️ Verified
+                </span>
+              )}
+              <div className="flex items-center gap-1">
+                <span className="text-[11px] font-medium text-slate-600">{profile.trustScore ?? 80}%</span>
+                <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-200">
+                  <div
+                    className="h-full bg-emerald-600"
+                    style={{ width: `${profile.trustScore ?? 80}%` }}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
           <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">
             Match
@@ -185,6 +205,7 @@ const Dashboard = () => {
   const [chats, setChats] = useState([]);
   const [allProfiles, setAllProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedProfile, setSelectedProfile] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -228,6 +249,47 @@ const Dashboard = () => {
     } catch (error) {
       console.error('Error sending interest:', error);
       toast.error('Failed to send interest.');
+    }
+  };
+
+  const handleLikeUser = async (candidate) => {
+    if (!user?.uid) return;
+
+    try {
+      const isMatch = await likeUser(user.uid, candidate.uid);
+      toast.success(isMatch ? `It's a match with ${candidate.name}!` : `Liked ${candidate.name}`);
+    } catch (error) {
+      console.error('Error liking user:', error);
+      toast.error('Failed to like profile. Try again.');
+    }
+  };
+
+  const handleViewDetails = (candidate) => {
+    setSelectedProfile(candidate);
+  };
+
+  const handleBlockUser = async (candidate) => {
+    if (!user?.uid) return;
+
+    try {
+      await blockUser(user.uid, candidate.uid);
+      setSuggestedMatches((prev) => prev.filter((item) => item.uid !== candidate.uid));
+      toast.success('User blocked');
+    } catch (error) {
+      console.error('Error blocking suggested user:', error);
+      toast.error('Failed to block user.');
+    }
+  };
+
+  const handleReportUser = async (candidate) => {
+    if (!user?.uid) return;
+
+    try {
+      await reportUser({ reporterUid: user.uid, reportedUid: candidate.uid, reason: 'Suspicious behavior' });
+      toast.success('Profile reported');
+    } catch (error) {
+      console.error('Error reporting suggested user:', error);
+      toast.error('Failed to report profile.');
     }
   };
 
@@ -356,7 +418,15 @@ const Dashboard = () => {
             <div className="space-y-3">
               {suggestedMatches.length > 0 ? (
                 suggestedMatches.map((match) => (
-                  <ProfileCard key={match.uid} profile={match} onInterest={handleSendInterest} />
+                  <MatchProfileCard
+                    key={match.uid}
+                    profile={match}
+                    onLike={handleLikeUser}
+                    onSendInterest={handleSendInterest}
+                    onViewDetails={handleViewDetails}
+                    onReport={handleReportUser}
+                    onBlock={handleBlockUser}
+                  />
                 ))
               ) : (
                 <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center">
@@ -400,7 +470,12 @@ const Dashboard = () => {
           </section>
         </div>
 
-        <ChatbotWidget />
+        <ProfileModal
+          profile={selectedProfile}
+          isOpen={Boolean(selectedProfile)}
+          onClose={() => setSelectedProfile(null)}
+        />
+
       </main>
       )}
     </div>

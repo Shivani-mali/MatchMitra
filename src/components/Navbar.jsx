@@ -7,6 +7,7 @@ const navItems = [
   { to: '/matches', label: 'Matches' },
   { to: '/profile', label: 'Profile' },
   { to: '/chat', label: 'Chat' },
+  { to: '/testimonials', label: 'Testimonials' },
 ];
 
 const Navbar = () => {
