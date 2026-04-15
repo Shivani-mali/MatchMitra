@@ -47,7 +47,7 @@ const ProfileCard = ({ profile, onInterest }) => (
 );
 
 const InterestCard = ({ interest, profiles }) => {
-  const senderProfile = profiles.find(p => p.uid === interest.fromUid);
+  const senderProfile = profiles.find(p => p.uid === interest.fromUser);
   return (
     <article className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
       <div className="flex items-center space-x-3">

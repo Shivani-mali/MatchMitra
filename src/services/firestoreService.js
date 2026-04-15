@@ -4,6 +4,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
   onSnapshot,
   orderBy,
   query,
@@ -112,18 +113,29 @@ export const updateInterestStatus = async (interestId, status) => {
 };
 
 export const getInterestsForUser = async (uid) => {
-  const receivedQuery = query(interestsCollection, where('toUser', '==', uid));
-  const sentQuery = query(interestsCollection, where('fromUser', '==', uid));
+  try {
+    const receivedQuery = query(interestsCollection, where('toUser', '==', uid));
+    const sentQuery = query(interestsCollection, where('fromUser', '==', uid));
 
-  const [received, sent] = await Promise.all([
-    getDocs(receivedQuery),
-    getDocs(sentQuery),
-  ]);
+    const [received, sent] = await Promise.all([
+      getDocs(receivedQuery),
+      getDocs(sentQuery),
+    ]);
 
-  return {
-    received: received.docs.map((entry) => ({ id: entry.id, ...entry.data() })),
-    sent: sent.docs.map((entry) => ({ id: entry.id, ...entry.data() })),
-  };
+    const receivedData = received.docs.map((entry) => ({ id: entry.id, ...entry.data() }));
+    const sentData = sent.docs.map((entry) => ({ id: entry.id, ...entry.data() }));
+
+    console.log('Received interests:', receivedData);
+    console.log('Sent interests:', sentData);
+
+    return {
+      received: receivedData,
+      sent: sentData,
+    };
+  } catch (error) {
+    console.error('Error fetching interests:', error);
+    return { received: [], sent: [] };
+  }
 };
 
 export const createChatId = (uidA, uidB) => [uidA, uidB].sort().join('_');
@@ -175,20 +187,42 @@ export const incrementProfileViews = async (uid) => {
   }
 };
 
-export const getChatsForUser = async (uid) => {
-  const chatsQuery = query(
-    collection(db, 'chats'),
-    where('users', 'array-contains', uid),
-    orderBy('updatedAt', 'desc')
-  );
-  const snapshot = await getDocs(chatsQuery);
-  return snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() }));
-};
-
 export const getSuggestedMatches = async (currentUid, limit = 5) => {
   const allProfiles = await getAllProfiles();
   const filtered = allProfiles
     .filter((profile) => profile.uid !== currentUid)
     .slice(0, limit);
   return filtered;
+};
+
+export const getChatsForUser = async (uid) => {
+  const interestsQuerySent = query(interestsCollection, where('status', '==', 'accepted'), where('fromUser', '==', uid));
+  const interestsQueryReceived = query(interestsCollection, where('status', '==', 'accepted'), where('toUser', '==', uid));
+
+  const [sent, received] = await Promise.all([getDocs(interestsQuerySent), getDocs(interestsQueryReceived)]);
+
+  const allInterests = [...sent.docs, ...received.docs].map(doc => ({ id: doc.id, ...doc.data() }));
+
+  const chatPromises = allInterests.map(async (interest) => {
+    const otherUid = interest.fromUser === uid ? interest.toUser : interest.fromUser;
+    const chatId = createChatId(uid, otherUid);
+
+    // Get last message
+    const messagesRef = collection(db, 'chats', chatId, 'messages');
+    const lastMessageQuery = query(messagesRef, orderBy('createdAt', 'desc'), limit(1));
+    const lastMessageSnap = await getDocs(lastMessageQuery);
+    const lastMessage = lastMessageSnap.docs[0]?.data();
+
+    // Get other user's profile
+    const otherProfile = await getProfileByUid(otherUid);
+
+    return {
+      chatId,
+      otherUid,
+      otherProfile,
+      lastMessage: lastMessage ? { ...lastMessage, id: lastMessageSnap.docs[0].id } : null,
+    };
+  });
+
+  return Promise.all(chatPromises);
 };
