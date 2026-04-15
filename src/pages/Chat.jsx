@@ -42,6 +42,11 @@ const Chat = () => {
   return (
     <div className="min-h-screen bg-slate-100">
       <Navbar />
+      <div className="border-b-4 border-orange-600 bg-orange-50 px-4 py-3">
+        <div className="mx-auto max-w-6xl">
+          <h2 className="text-xl font-bold text-orange-900">💬 CHAT PAGE</h2>
+        </div>
+      </div>
       <main className="mx-auto grid max-w-6xl gap-4 p-4 md:grid-cols-3 md:p-6">
         <aside className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <h1 className="text-lg font-semibold text-slate-800">Accepted Interests</h1>

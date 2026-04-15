@@ -55,19 +55,36 @@ const Matches = () => {
 
   const handleSendInterest = async (profile) => {
     if (!user?.uid) return;
-    await sendInterest({ fromUid: user.uid, toUid: profile.uid });
-    setStatus(`Interest sent to ${profile.name}`);
+    try {
+      await sendInterest({ fromUid: user.uid, toUid: profile.uid });
+      setStatus(`Interest sent to ${profile.name}!`);
+      setTimeout(() => setStatus(''), 3000);
+    } catch (error) {
+      console.error('Error sending interest:', error);
+      setStatus('Failed to send interest. Try again.');
+    }
   };
 
   const handleReportUser = async (profile) => {
     if (!user?.uid) return;
-    await reportUser({ reporterUid: user.uid, reportedUid: profile.uid, reason: 'Suspicious behavior' });
-    setStatus(`Reported ${profile.name}. Our moderation team will review.`);
+    try {
+      await reportUser({ reporterUid: user.uid, reportedUid: profile.uid, reason: 'Suspicious behavior' });
+      setStatus(`Reported ${profile.name}. Our team will review.`);
+      setTimeout(() => setStatus(''), 3000);
+    } catch (error) {
+      console.error('Error reporting user:', error);
+      setStatus('Failed to report. Try again.');
+    }
   };
 
   return (
     <div className="min-h-screen bg-slate-100">
       <Navbar />
+      <div className="border-b-4 border-green-600 bg-green-50 px-4 py-3">
+        <div className="mx-auto max-w-6xl">
+          <h2 className="text-xl font-bold text-green-900">💕 MATCHES PAGE</h2>
+        </div>
+      </div>
       <main className="mx-auto max-w-6xl space-y-4 p-4 md:p-6">
         <h1 className="text-2xl font-bold text-slate-800">Find Matches</h1>
         <FilterBar filters={filters} setFilters={setFilters} />

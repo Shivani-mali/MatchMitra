@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { db } from '../services/firebase';
 import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
@@ -13,17 +15,32 @@ const Login = () => {
 
   const nextPath = location.state?.from?.pathname || '/profile';
 
+  const checkProfileAndNavigate = async (user) => {
+    try {
+      const docRef = doc(db, 'users', user.uid);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        navigate('/matches');
+      } else {
+        navigate('/profile');
+      }
+    } catch (error) {
+      console.error('Error checking profile:', error);
+      navigate('/profile');
+    }
+  };
+
   const submitLogin = async (event) => {
     event.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      await loginWithEmail(email, password);
-      navigate(nextPath);
+      const userCredential = await loginWithEmail(email, password);
+      await checkProfileAndNavigate(userCredential.user);
     } catch (err) {
       setError(err.message);
-    } finally {
       setLoading(false);
     }
   };
@@ -33,11 +50,10 @@ const Login = () => {
     setLoading(true);
 
     try {
-      await loginWithGoogle();
-      navigate(nextPath);
+      const userCredential = await loginWithGoogle();
+      await checkProfileAndNavigate(userCredential.user);
     } catch (err) {
       setError(err.message);
-    } finally {
       setLoading(false);
     }
   };

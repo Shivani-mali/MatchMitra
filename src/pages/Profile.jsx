@@ -5,7 +5,6 @@ import { useAuth } from '../context/AuthContext';
 import {
   calculateProfileCompletion,
   getProfileByUid,
-  uploadProfilePhoto,
   upsertProfile,
 } from '../services/firestoreService';
 
@@ -34,23 +33,43 @@ const Profile = () => {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState(initialProfile);
-  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     const loadProfile = async () => {
       if (!user?.uid) return;
-      const data = await getProfileByUid(user.uid);
-      if (data) {
-        setProfile((prev) => ({
-          ...prev,
-          ...data,
-          partnerPreferences: {
-            ...prev.partnerPreferences,
-            ...(data.partnerPreferences || {}),
-          },
-        }));
+      try {
+        const data = await getProfileByUid(user.uid);
+        if (data) {
+          setIsEditing(true);
+          setProfile({
+            name: data.name || '',
+            age: data.age || '',
+            gender: data.gender || '',
+            location: data.location || '',
+            religion: data.religion || '',
+            caste: data.caste || '',
+            profession: data.profession || '',
+            education: data.education || '',
+            hobbies: data.hobbies ? data.hobbies.join(', ') : '',
+            bio: data.bio || '',
+            photoURL: '',
+            partnerPreferences: {
+              minAge: data.partnerPreferences?.minAge || '',
+              maxAge: data.partnerPreferences?.maxAge || '',
+              location: data.partnerPreferences?.location || '',
+              religion: data.partnerPreferences?.religion || '',
+              caste: data.partnerPreferences?.caste || '',
+            },
+          });
+        } else {
+          setIsEditing(false);
+        }
+      } catch (error) {
+        console.error('Failed to load profile:', error);
+        setIsEditing(false);
       }
     };
 
@@ -65,18 +84,6 @@ const Profile = () => {
       ...prev,
       partnerPreferences: { ...prev.partnerPreferences, [field]: value },
     }));
-
-  const onPhotoChange = async (event) => {
-    if (!event.target.files?.[0] || !user?.uid) return;
-    setUploading(true);
-
-    try {
-      const photoURL = await uploadProfilePhoto(user.uid, event.target.files[0]);
-      updateField('photoURL', photoURL);
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const onSubmit = async (event) => {
     event.preventDefault();
@@ -101,10 +108,14 @@ const Profile = () => {
       await upsertProfile(user.uid, payload);
       await refreshProfile();
 
-      setMessage('Profile saved successfully.');
-      if (calculateProfileCompletion(payload) >= 90) {
-        navigate('/dashboard');
-      }
+      setMessage('Profile saved successfully! Redirecting...');
+      
+      setTimeout(() => {
+        navigate('/matches');
+      }, 1500);
+    } catch (error) {
+      console.error('Profile save error:', error);
+      setMessage(`Save failed: ${error.message}`);
     } finally {
       setSaving(false);
     }
@@ -113,12 +124,21 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-slate-100">
       <Navbar />
+      <div className="border-b-4 border-purple-600 bg-purple-50 px-4 py-3">
+        <div className="mx-auto max-w-4xl">
+          <h2 className="text-xl font-bold text-purple-900">👤 PROFILE PAGE</h2>
+        </div>
+      </div>
       <main className="mx-auto max-w-4xl p-4 md:p-6">
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-bold text-slate-800">Create Your Profile</h1>
-              <p className="text-sm text-slate-500">Complete your details to unlock better matches.</p>
+              <h1 className="text-2xl font-bold text-slate-800">
+                {isEditing ? 'Edit Your Profile' : 'Create Your Profile'}
+              </h1>
+              <p className="text-sm text-slate-500">
+                {isEditing ? 'Update your details anytime.' : 'Complete your details to unlock better matches.'}
+              </p>
             </div>
             <div className="rounded-full bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-700">
               Completion: {completionPercent}%
@@ -150,21 +170,23 @@ const Profile = () => {
 
             <div className="md:col-span-2">
               <label className="mb-1 block text-sm font-medium text-slate-700">Profile Photo</label>
-              <input type="file" accept="image/*" onChange={onPhotoChange} className="w-full rounded-lg border border-slate-200 px-3 py-2" />
-              {uploading && <p className="mt-1 text-xs text-indigo-600">Uploading photo...</p>}
-              {profile.photoURL && (
-                <img src={profile.photoURL} alt="Profile" className="mt-3 h-24 w-24 rounded-xl object-cover" />
-              )}
+              <p className="text-sm text-slate-500">Photo upload will be available soon.</p>
             </div>
 
-            {message && <p className="text-sm text-emerald-700 md:col-span-2">{message}</p>}
+            {message && (
+              <p className={`text-sm md:col-span-2 ${
+                message.includes('failed') ? 'text-red-600' : 'text-emerald-600'
+              }`}>
+                {message}
+              </p>
+            )}
 
             <button
               type="submit"
               disabled={saving}
               className="md:col-span-2 rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700 disabled:opacity-70"
             >
-              {saving ? 'Saving...' : 'Save Profile'}
+              {saving ? 'Saving...' : isEditing ? 'Update Profile' : 'Save Profile'}
             </button>
           </form>
         </section>

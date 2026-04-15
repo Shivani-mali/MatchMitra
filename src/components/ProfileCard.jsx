@@ -3,7 +3,7 @@ const ProfileCard = ({ profile, onSendInterest, onReport }) => {
     <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-start gap-4">
         <img
-          src={profile.photoURL || 'https://placehold.co/100x100?text=User'}
+          src={profile.photo || profile.photoURL || 'https://placehold.co/100x100?text=User'}
           alt={profile.name || 'User'}
           className="h-20 w-20 rounded-xl object-cover"
         />
