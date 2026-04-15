@@ -1,0 +1,10 @@
+{
+  "auth": {
+    "providers": {
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "The Webathon login",
+        "supportEmail": "shubhasmali1983@gmail.com"
+      }
+    }
+  }
+}
