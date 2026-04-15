@@ -150,8 +150,31 @@ const Profile = () => {
                 {isEditing ? 'Update your details anytime.' : 'Complete your details to unlock better matches.'}
               </p>
             </div>
-            <div className="rounded-full bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-700">
-              Completion: {completionPercent}%
+             <div className="flex flex-col gap-2">
+               {isEditing && profile.name && (
+                 <>
+                   <div className="text-right">
+                     {profile?.isVerified && (
+                       <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                         ✔️ Verified
+                       </span>
+                     )}
+                   </div>
+                   <div className="flex items-center justify-end gap-2 rounded-lg bg-blue-50 px-3 py-2">
+                     <span className="text-xs font-semibold text-blue-700">Trust Score:</span>
+                     <span className="text-sm font-bold text-blue-900">{profile?.trustScore || 80}%</span>
+                     <div className="h-2 w-24 overflow-hidden rounded-full bg-blue-200">
+                       <div 
+                         className="h-full bg-blue-600"
+                         style={{ width: `${profile?.trustScore || 80}%` }}
+                       />
+                     </div>
+                   </div>
+                 </>
+               )}
+               <div className="rounded-full bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-700 text-center">
+                 Completion: {completionPercent}%
+               </div>
             </div>
           </div>
 

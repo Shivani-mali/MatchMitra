@@ -34,6 +34,23 @@ const ProfileCard = ({
               <p className="mt-1 text-sm text-slate-500 truncate">
                 {profile.age ? `${profile.age} yrs` : 'Age N/A'} · {profile.location || 'Location unknown'}
               </p>
+               {/* Trust Score & Verified Badge */}
+               <div className="mt-2 flex items-center gap-2">
+                 {profile.isVerified && (
+                   <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">
+                     ✔️ Verified
+                   </span>
+                 )}
+                 <div className="flex items-center gap-1">
+                   <span className="text-xs font-medium text-slate-600">{profile.trustScore || 80}%</span>
+                   <div className="h-2 w-20 overflow-hidden rounded-full bg-slate-200">
+                     <div 
+                         className="h-full bg-emerald-600"
+                       style={{ width: `${profile.trustScore || 80}%` }}
+                     />
+                   </div>
+                 </div>
+               </div>
               <p className="mt-3 text-sm font-medium text-slate-700 truncate">
                 {profile.profession || 'Profession not specified'}
               </p>

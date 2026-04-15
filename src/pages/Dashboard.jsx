@@ -276,6 +276,31 @@ const Dashboard = () => {
           <p className="mt-1 text-sm text-slate-500">
             Track your journey to meaningful matches from one clean overview.
           </p>
+           {/* Trust Score & Verified Badge */}
+           <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
+             <div className="flex items-center gap-2">
+               <span className="text-sm font-semibold text-slate-600">Your Profile:</span>
+               {profile?.isVerified && (
+                 <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                   ✔️ Verified
+                 </span>
+               )}
+             </div>
+             <div className="flex items-center gap-3">
+               <div className="flex flex-col gap-1">
+                 <span className="text-xs font-semibold text-slate-600">Trust Score</span>
+                 <div className="flex items-center gap-2">
+                   <span className="text-sm font-bold text-slate-900">{profile?.trustScore || 80}%</span>
+                   <div className="h-2 w-32 overflow-hidden rounded-full bg-slate-200">
+                     <div 
+                       className="h-full bg-indigo-600"
+                       style={{ width: `${profile?.trustScore || 80}%` }}
+                     />
+                   </div>
+                 </div>
+               </div>
+             </div>
+           </div>
         </section>
 
         {/* Stats Cards */}
