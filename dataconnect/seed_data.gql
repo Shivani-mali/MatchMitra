@@ -1,0 +1,194 @@
+mutation CreateDemoData @transaction @auth(level: USER, insecureReason: "Seed data mutation for demo purposes. Can be run by any authenticated user.") {
+  user_insertMany(data: [
+    {
+      id: "550e8400-e29b-41d4-a716-446655440000",
+      email: "john.doe@example.com",
+      passwordHash: "hashed_password_1",
+      displayName: "John Doe",
+      gender: "Male",
+      dob: "1990-01-15",
+      lookingForGender: "Female",
+      createdAt: "2023-01-01T10:00:00Z",
+      bio: "Software engineer who loves hiking and photography.",
+      city: "New York",
+      country: "USA",
+      religion: "Christian",
+      education: "Master's Degree",
+      profession: "Software Engineer",
+      height: 175.5,
+      photoUrl: "https://example.com/john_doe.jpg",
+      lastLoginAt: "2023-10-26T14:30:00Z"
+    },
+    {
+      id: "550e8400-e29b-41d4-a716-446655440001",
+      email: "jane.smith@example.com",
+      passwordHash: "hashed_password_2",
+      displayName: "Jane Smith",
+      gender: "Female",
+      dob: "1992-05-20",
+      lookingForGender: "Male",
+      createdAt: "2023-01-02T11:00:00Z",
+      bio: "Marketing professional with a passion for travel and cooking.",
+      city: "Los Angeles",
+      country: "USA",
+      religion: "Agnostic",
+      education: "Bachelor's Degree",
+      profession: "Marketing Manager",
+      height: 162.0,
+      photoUrl: "https://example.com/jane_smith.jpg",
+      lastLoginAt: "2023-10-27T09:45:00Z"
+    },
+    {
+      id: "550e8400-e29b-41d4-a716-446655440002",
+      email: "peter.jones@example.com",
+      passwordHash: "hashed_password_3",
+      displayName: "Peter Jones",
+      gender: "Male",
+      dob: "1988-11-10",
+      lookingForGender: "Female",
+      createdAt: "2023-01-03T12:00:00Z",
+      bio: "Entrepreneur who enjoys playing guitar and cycling.",
+      city: "London",
+      country: "UK",
+      religion: "None",
+      education: "PhD",
+      profession: "Startup Founder",
+      height: 180.0,
+      photoUrl: "https://example.com/peter_jones.jpg",
+      lastLoginAt: "2023-10-26T18:00:00Z"
+    }
+  ])
+  profile_insertMany(data: [
+    {
+      userId: "550e8400-e29b-41d4-a716-446655440000",
+      maritalStatus: "Single",
+      community: "Tech Enthusiasts",
+      motherTongue: "English",
+      wantsChildren: true,
+      hobbies: ["Hiking", "Photography", "Reading"],
+      interests: ["Nature", "Art", "Technology"],
+      familyValues: "Close-knit, supportive, respectful",
+      dietaryPreferences: "Vegetarian",
+      aboutFamily: "Supportive family, grew up with two siblings.",
+      partnerExpectations: "Kind, adventurous, intelligent"
+    },
+    {
+      userId: "550e8400-e29b-41d4-a716-446655440001",
+      maritalStatus: "Single",
+      community: "Foodies",
+      motherTongue: "English",
+      wantsChildren: true,
+      hobbies: ["Traveling", "Cooking", "Yoga"],
+      interests: ["Culture", "Food", "Wellness"],
+      familyValues: "Open-minded, loving, fun",
+      dietaryPreferences: "No preference",
+      aboutFamily: "Small family, very close to parents.",
+      partnerExpectations: "Humorous, supportive, well-traveled"
+    },
+    {
+      userId: "550e8400-e29b-41d4-a716-446655440002",
+      maritalStatus: "Divorced",
+      community: "Music Lovers",
+      motherTongue: "English",
+      wantsChildren: false,
+      hobbies: ["Playing Guitar", "Cycling", "Meditation"],
+      interests: ["Music", "Outdoors", "Personal Growth"],
+      familyValues: "Independent, honest, creative",
+      dietaryPreferences: "Pescatarian",
+      aboutFamily: "Only child, strong bond with extended family.",
+      partnerExpectations: "Intellectual, understanding, independent"
+    }
+  ])
+  subscriptionType_insertMany(data: [
+    {
+      id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+      name: "Basic",
+      price: 9.99,
+      durationInDays: 30,
+      features: ["Browse profiles", "Send 5 interests/day"],
+      createdAt: "2023-01-01T08:00:00Z"
+    },
+    {
+      id: "b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12",
+      name: "Premium",
+      price: 29.99,
+      durationInDays: 90,
+      features: ["Browse profiles", "Unlimited interests", "Advanced filters"],
+      createdAt: "2023-01-01T08:00:00Z"
+    }
+  ])
+  userSubscription_insertMany(data: [
+    {
+      userId: "550e8400-e29b-41d4-a716-446655440000",
+      subscriptionTypeId: "b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12",
+      startDate: "2023-10-01T00:00:00Z",
+      endDate: "2024-01-01T00:00:00Z",
+      createdAt: "2023-10-01T00:00:00Z"
+    },
+    {
+      userId: "550e8400-e29b-41d4-a716-446655440001",
+      subscriptionTypeId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+      startDate: "2023-10-15T00:00:00Z",
+      endDate: "2023-11-15T00:00:00Z",
+      createdAt: "2023-10-15T00:00:00Z"
+    }
+  ])
+  interest_insertMany(data: [
+    {
+      senderId: "550e8400-e29b-41d4-a716-446655440000",
+      receiverId: "550e8400-e29b-41d4-a716-446655440001",
+      status: "Pending",
+      createdAt: "2023-10-27T10:00:00Z"
+    },
+    {
+      senderId: "550e8400-e29b-41d4-a716-446655440001",
+      receiverId: "550e8400-e29b-41d4-a716-446655440000",
+      status: "Accepted",
+      createdAt: "2023-10-27T11:00:00Z"
+    }
+  ])
+  message_insertMany(data: [
+    {
+      senderId: "550e8400-e29b-41d4-a716-446655440000",
+      receiverId: "550e8400-e29b-41d4-a716-446655440001",
+      content: "Hi Jane, I really liked your profile!",
+      createdAt: "2023-10-27T12:00:00Z"
+    },
+    {
+      senderId: "550e8400-e29b-41d4-a716-446655440001",
+      receiverId: "550e8400-e29b-41d4-a716-446655440000",
+      content: "Thanks, John! I liked yours too. Would you like to chat more?",
+      createdAt: "2023-10-27T12:05:00Z"
+    }
+  ])
+  photo_insertMany(data: [
+    {
+      userId: "550e8400-e29b-41d4-a716-446655440000",
+      imageUrl: "https://example.com/john_hiking_1.jpg",
+      createdAt: "2023-09-01T10:00:00Z",
+      isProfilePic: true,
+      caption: "Hiking in the mountains!"
+    },
+    {
+      userId: "550e8400-e29b-41d4-a716-446655440000",
+      imageUrl: "https://example.com/john_photography_2.jpg",
+      createdAt: "2023-09-05T11:00:00Z",
+      isProfilePic: false,
+      caption: "My latest photography work."
+    },
+    {
+      userId: "550e8400-e29b-41d4-a716-446655440001",
+      imageUrl: "https://example.com/jane_travel_1.jpg",
+      createdAt: "2023-08-10T15:00:00Z",
+      isProfilePic: true,
+      caption: "Exploring new places!"
+    },
+    {
+      userId: "550e8400-e29b-41d4-a716-446655440001",
+      imageUrl: "https://example.com/jane_cooking_2.jpg",
+      createdAt: "2023-08-15T16:00:00Z",
+      isProfilePic: false,
+      caption: "My favorite dish to cook."
+    }
+  ])
+}

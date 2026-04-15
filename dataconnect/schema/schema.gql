@@ -1,0 +1,71 @@
+type User @table {
+  email: String!
+  passwordHash: String!
+  displayName: String!
+  gender: String!
+  dob: Date!
+  lookingForGender: String!
+  createdAt: Timestamp!
+  bio: String
+  city: String
+  country: String
+  religion: String
+  education: String
+  profession: String
+  height: Float
+  photoUrl: String
+  lastLoginAt: Timestamp
+}
+
+type Profile @table {
+  user: User!
+  maritalStatus: String!
+  community: String!
+  motherTongue: String!
+  wantsChildren: Boolean!
+  hobbies: [String]
+  interests: [String]
+  familyValues: String
+  dietaryPreferences: String
+  aboutFamily: String
+  partnerExpectations: String
+}
+
+type Interest @table {
+  sender: User!
+  receiver: User!
+  status: String!
+  createdAt: Timestamp!
+}
+
+type Message @table {
+  sender: User!
+  receiver: User!
+  content: String!
+  createdAt: Timestamp!
+  readAt: Timestamp
+}
+
+type Photo @table {
+  user: User!
+  imageUrl: String!
+  createdAt: Timestamp!
+  isProfilePic: Boolean
+  caption: String
+}
+
+type SubscriptionType @table {
+  name: String!
+  price: Float!
+  durationInDays: Int!
+  features: [String]
+  createdAt: Timestamp!
+}
+
+type UserSubscription @table {
+  user: User!
+  subscriptionType: SubscriptionType!
+  startDate: Timestamp!
+  endDate: Timestamp!
+  createdAt: Timestamp!
+}

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import Loader from '../components/Loader';
 import { useAuth } from '../context/AuthContext';
 
 const Signup = () => {
@@ -24,6 +25,10 @@ const Signup = () => {
       setLoading(false);
     }
   };
+
+  if (loading) {
+    return <Loader message="Creating your account..." />;
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-100 p-4">

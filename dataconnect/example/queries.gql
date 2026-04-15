@@ -1,0 +1,57 @@
+query ListAllSubscriptionTypes @auth(level: PUBLIC, insecureReason: "This operation is safe to expose to the public as it lists public subscription information.") {
+  subscriptionTypes {
+    id
+    name
+    price
+    durationInDays
+    features
+  }
+}
+
+mutation CreateUserProfile($maritalStatus: String!, $community: String!, $motherTongue: String!, $wantsChildren: Boolean!, $hobbies: [String!], $interests: [String!], $familyValues: String, $dietaryPreferences: String, $aboutFamily: String, $partnerExpectations: String) @auth(level: USER, insecureReason: "This operation is safe to expose to all logged in users for creating their own profile.") {
+  profile_insert(data: {
+    userId_expr: "auth.uid",
+    maritalStatus: $maritalStatus,
+    community: $community,
+    motherTongue: $motherTongue,
+    wantsChildren: $wantsChildren,
+    hobbies: $hobbies,
+    interests: $interests,
+    familyValues: $familyValues,
+    dietaryPreferences: $dietaryPreferences,
+    aboutFamily: $aboutFamily,
+    partnerExpectations: $partnerExpectations
+  }) {
+    id
+  }
+}
+
+query GetMyProfile @auth(level: USER, insecureReason: "This operation is safe to expose to all logged in users as it retrieves their own profile.") {
+  profile(key: {userId_expr: "auth.uid"}) {
+    id
+    maritalStatus
+    community
+    motherTongue
+    wantsChildren
+    hobbies
+    interests
+    familyValues
+    dietaryPreferences
+    aboutFamily
+    partnerExpectations
+    user {
+      displayName
+      email
+    }
+  }
+}
+
+mutation SendMessageToUser($receiverId: UUID!, $content: String!) @auth(level: USER, insecureReason: "This operation allows logged-in users to send messages to other users.") {
+  message_insert(data: {
+    senderId_expr: "auth.uid",
+    receiverId: $receiverId,
+    content: $content
+  }) {
+    id
+  }
+}

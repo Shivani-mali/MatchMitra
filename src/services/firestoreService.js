@@ -19,6 +19,7 @@ import { db, storage } from './firebase';
 const usersCollection = collection(db, 'users');
 const interestsCollection = collection(db, 'interests');
 const reportsCollection = collection(db, 'reports');
+const chatsCollection = collection(db, 'chats');
 
 const requiredProfileFields = [
   'name',
@@ -112,6 +113,36 @@ export const updateInterestStatus = async (interestId, status) => {
   });
 };
 
+export const createChatForUsers = async (currentUid, otherUid) => {
+  const chatId = createChatId(currentUid, otherUid);
+  const chatRef = doc(db, 'chats', chatId);
+  const chatSnapshot = await getDoc(chatRef);
+
+  if (!chatSnapshot.exists()) {
+    await setDoc(chatRef, {
+      users: [currentUid, otherUid],
+      lastMessage: '',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  } else {
+    await updateDoc(chatRef, {
+      users: [currentUid, otherUid],
+      updatedAt: serverTimestamp(),
+    });
+  }
+
+  return chatId;
+};
+
+export const respondToInterest = async ({ interestId, status, currentUid, otherUid }) => {
+  await updateInterestStatus(interestId, status);
+
+  if (status === 'accepted') {
+    await createChatForUsers(currentUid, otherUid);
+  }
+};
+
 export const getInterestsForUser = async (uid) => {
   try {
     const receivedQuery = query(interestsCollection, where('toUser', '==', uid));
@@ -125,9 +156,6 @@ export const getInterestsForUser = async (uid) => {
     const receivedData = received.docs.map((entry) => ({ id: entry.id, ...entry.data() }));
     const sentData = sent.docs.map((entry) => ({ id: entry.id, ...entry.data() }));
 
-    console.log('Received interests:', receivedData);
-    console.log('Sent interests:', sentData);
-
     return {
       received: receivedData,
       sent: sentData,
@@ -140,14 +168,43 @@ export const getInterestsForUser = async (uid) => {
 
 export const createChatId = (uidA, uidB) => [uidA, uidB].sort().join('_');
 
-export const sendMessage = async ({ chatId, senderId, text }) => {
+const getChatLastMessagePreview = ({ messageType, text, fileName }) => {
+  if (messageType === 'image') {
+    return `📷 ${fileName || 'Photo'}`;
+  }
+
+  if (messageType === 'voice') {
+    return '🎤 Voice message';
+  }
+
+  return text || 'New message';
+};
+
+export const uploadChatMedia = async ({ chatId, senderId, file, folder }) => {
+  const safeName = `${Date.now()}-${file.name}`;
+  const mediaRef = ref(storage, `chats/${chatId}/${folder}/${senderId}/${safeName}`);
+
+  await uploadBytes(mediaRef, file);
+  return getDownloadURL(mediaRef);
+};
+
+export const sendMessage = async ({
+  chatId,
+  senderId,
+  text = '',
+  messageType = 'text',
+  mediaUrl = '',
+  fileName = '',
+}) => {
   const chatRef = doc(db, 'chats', chatId);
   const messagesRef = collection(db, 'chats', chatId, 'messages');
+
+  const lastMessage = getChatLastMessagePreview({ messageType, text, fileName });
 
   // Create or update chat document
   await setDoc(chatRef, {
     users: chatId.split('_'),
-    lastMessage: text,
+    lastMessage,
     updatedAt: serverTimestamp(),
   }, { merge: true });
 
@@ -155,7 +212,46 @@ export const sendMessage = async ({ chatId, senderId, text }) => {
   await addDoc(messagesRef, {
     senderId,
     text,
+    messageType,
+    mediaUrl,
+    fileName,
     createdAt: serverTimestamp(),
+  });
+};
+
+export const sendImageMessage = async ({ chatId, senderId, imageFile, caption = '' }) => {
+  const mediaUrl = await uploadChatMedia({
+    chatId,
+    senderId,
+    file: imageFile,
+    folder: 'images',
+  });
+
+  await sendMessage({
+    chatId,
+    senderId,
+    text: caption,
+    messageType: 'image',
+    mediaUrl,
+    fileName: imageFile.name,
+  });
+};
+
+export const sendVoiceMessage = async ({ chatId, senderId, audioFile }) => {
+  const mediaUrl = await uploadChatMedia({
+    chatId,
+    senderId,
+    file: audioFile,
+    folder: 'voice',
+  });
+
+  await sendMessage({
+    chatId,
+    senderId,
+    text: '',
+    messageType: 'voice',
+    mediaUrl,
+    fileName: audioFile.name,
   });
 };
 
@@ -196,33 +292,31 @@ export const getSuggestedMatches = async (currentUid, limit = 5) => {
 };
 
 export const getChatsForUser = async (uid) => {
-  const interestsQuerySent = query(interestsCollection, where('status', '==', 'accepted'), where('fromUser', '==', uid));
-  const interestsQueryReceived = query(interestsCollection, where('status', '==', 'accepted'), where('toUser', '==', uid));
+  const chatsQuery = query(chatsCollection, where('users', 'array-contains', uid));
+  const chatsSnapshot = await getDocs(chatsQuery);
 
-  const [sent, received] = await Promise.all([getDocs(interestsQuerySent), getDocs(interestsQueryReceived)]);
-
-  const allInterests = [...sent.docs, ...received.docs].map(doc => ({ id: doc.id, ...doc.data() }));
-
-  const chatPromises = allInterests.map(async (interest) => {
-    const otherUid = interest.fromUser === uid ? interest.toUser : interest.fromUser;
-    const chatId = createChatId(uid, otherUid);
-
-    // Get last message
-    const messagesRef = collection(db, 'chats', chatId, 'messages');
-    const lastMessageQuery = query(messagesRef, orderBy('createdAt', 'desc'), limit(1));
-    const lastMessageSnap = await getDocs(lastMessageQuery);
-    const lastMessage = lastMessageSnap.docs[0]?.data();
-
-    // Get other user's profile
-    const otherProfile = await getProfileByUid(otherUid);
+  const chatPromises = chatsSnapshot.docs.map(async (entry) => {
+    const data = entry.data();
+    const users = data.users || [];
+    const otherUid = users.find((memberUid) => memberUid !== uid);
+    const otherProfile = otherUid ? await getProfileByUid(otherUid) : null;
 
     return {
-      chatId,
+      id: entry.id,
+      chatId: entry.id,
+      users,
       otherUid,
       otherProfile,
-      lastMessage: lastMessage ? { ...lastMessage, id: lastMessageSnap.docs[0].id } : null,
+      lastMessage: data.lastMessage || '',
+      updatedAt: data.updatedAt || null,
     };
   });
 
-  return Promise.all(chatPromises);
+  const chats = await Promise.all(chatPromises);
+
+  return chats.sort((a, b) => {
+    const aTime = a.updatedAt?.toMillis?.() || 0;
+    const bTime = b.updatedAt?.toMillis?.() || 0;
+    return bTime - aTime;
+  });
 };

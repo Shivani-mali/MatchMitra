@@ -1,12 +1,87 @@
 import { useEffect, useState, useRef } from 'react';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import toast from 'react-hot-toast';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
+import { db } from '../services/firebase';
 import {
-  createChatId,
   getChatsForUser,
+  sendImageMessage,
   sendMessage,
+  sendVoiceMessage,
   subscribeToMessages,
 } from '../services/firestoreService';
+
+const AttachmentIcon = ({ className = '' }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className} aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M21 12.5l-8.8 8.8a5 5 0 01-7.1-7.1l9.9-9.9a3.5 3.5 0 114.9 4.9l-9.9 9.9a2 2 0 11-2.8-2.8l8.4-8.4" />
+  </svg>
+);
+
+const MicIcon = ({ className = '' }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className} aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 14.5a3 3 0 003-3V6.5a3 3 0 10-6 0v5a3 3 0 003 3zm-5-3a5 5 0 0010 0m-5 5.5v3.5" />
+  </svg>
+);
+
+const StopIcon = ({ className = '' }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+    <rect x="6" y="6" width="12" height="12" rx="3" />
+  </svg>
+);
+
+const KeyboardIcon = ({ className = '' }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className} aria-hidden="true">
+    <rect x="3" y="6" width="18" height="12" rx="2.5" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M7 10h.01M10 10h.01M13 10h.01M16 10h.01M8 13h8" />
+  </svg>
+);
+
+const SendIcon = ({ className = '' }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className} aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M22 2 11 13" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M22 2 15 22l-4-9-9-4 20-7Z" />
+  </svg>
+);
+
+const ChatIcon = ({ className = '' }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className} aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M7 19.5 4 22v-3.6A8.5 8.5 0 1 1 7 19.5Z" />
+  </svg>
+);
+
+const BackIcon = ({ className = '' }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className} aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 18 9 12l6-6" />
+  </svg>
+);
+
+const ChatSkeleton = () => (
+  <div className="mx-auto flex h-[calc(100vh-152px)] max-w-7xl gap-4 p-4 md:h-[calc(100vh-200px)] md:p-6">
+    <div className="w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:w-1/3">
+      <div className="h-6 w-24 animate-pulse rounded bg-slate-200" />
+      <div className="mt-4 space-y-3">
+        {[1, 2, 3, 4].map((item) => (
+          <div key={item} className="flex items-center gap-3 rounded-xl p-2">
+            <div className="h-10 w-10 animate-pulse rounded-full bg-slate-200" />
+            <div className="flex-1 space-y-2">
+              <div className="h-3 w-24 animate-pulse rounded bg-slate-200" />
+              <div className="h-3 w-36 animate-pulse rounded bg-slate-100" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+    <div className="hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:block md:w-2/3">
+      <div className="h-8 w-48 animate-pulse rounded bg-slate-200" />
+      <div className="mt-4 space-y-3">
+        {[1, 2, 3].map((item) => (
+          <div key={item} className="h-16 animate-pulse rounded-2xl bg-slate-100" />
+        ))}
+      </div>
+    </div>
+  </div>
+);
 
 const Chat = () => {
   const { user } = useAuth();
@@ -16,8 +91,16 @@ const Chat = () => {
   const [messages, setMessages] = useState([]);
   const [messageText, setMessageText] = useState('');
   const [sending, setSending] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [voiceSupported, setVoiceSupported] = useState(true);
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const messageInputRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const [isMobileView, setIsMobileView] = useState(false);
 
   // Scroll to bottom when messages change
   const scrollToBottom = () => {
@@ -28,26 +111,63 @@ const Chat = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Load chats with last messages
   useEffect(() => {
-    const loadChats = async () => {
-      if (!user?.uid) {
-        setLoading(false);
-        return;
-      }
+    const hasVoiceSupport = Boolean(
+      navigator?.mediaDevices?.getUserMedia && window.MediaRecorder,
+    );
+    setVoiceSupported(hasVoiceSupport);
+  }, []);
 
-      try {
-        const chatsData = await getChatsForUser(user.uid);
-        setChats(chatsData);
-        console.log('Chats loaded:', chatsData);
-      } catch (error) {
-        console.error('Error loading chats:', error);
-      } finally {
-        setLoading(false);
-      }
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const updateMobileState = (event) => {
+      setIsMobileView(event.matches);
     };
 
-    loadChats();
+    setIsMobileView(mediaQuery.matches);
+    mediaQuery.addEventListener('change', updateMobileState);
+
+    return () => {
+      mediaQuery.removeEventListener('change', updateMobileState);
+    };
+  }, []);
+
+  // Load chats with last messages
+  useEffect(() => {
+    if (!user?.uid) {
+      setLoading(false);
+      setChats([]);
+      return;
+    }
+
+    setLoading(true);
+
+    const chatsQuery = query(
+      collection(db, 'chats'),
+      where('users', 'array-contains', user.uid),
+    );
+
+    const unsubscribe = onSnapshot(
+      chatsQuery,
+      async () => {
+        try {
+          const chatsData = await getChatsForUser(user.uid);
+          setChats(chatsData);
+          setLoading(false);
+        } catch (error) {
+          console.error('Error processing chats snapshot:', error);
+          toast.error('Failed to refresh chats. Please try again.');
+          setLoading(false);
+        }
+      },
+      (error) => {
+        console.error('Error subscribing to chats:', error);
+        toast.error('Unable to load chats right now.');
+        setLoading(false);
+      },
+    );
+
+    return () => unsubscribe();
   }, [user?.uid]);
 
   // Subscribe to messages when chat selected
@@ -59,7 +179,6 @@ const Chat = () => {
 
     const unsubscribe = subscribeToMessages(selectedChatId, (msgs) => {
       setMessages(msgs);
-      console.log('Messages updated:', msgs);
     });
 
     return () => unsubscribe();
@@ -68,13 +187,17 @@ const Chat = () => {
   const handleSelectChat = (chat) => {
     setSelectedChatId(chat.chatId);
     setSelectedProfile(chat.otherProfile);
-    console.log('Selected chat:', chat);
+  };
+
+  const handleBackToList = () => {
+    setSelectedChatId('');
+    setSelectedProfile(null);
+    setMessages([]);
   };
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!messageText.trim() || !user?.uid || !selectedChatId) {
-      console.warn('Cannot send message: missing required data');
       return;
     }
 
@@ -86,12 +209,116 @@ const Chat = () => {
         text: messageText.trim(),
       });
       setMessageText('');
-      console.log('Message sent successfully');
     } catch (error) {
       console.error('Error sending message:', error);
-      alert('Failed to send message. Please try again.');
+      toast.error('Failed to send message. Please try again.');
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleInputKeyDown = async (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      await handleSendMessage(event);
+    }
+  };
+
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageSelected = async (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file || !user?.uid || !selectedChatId) {
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file.');
+      return;
+    }
+
+    setSending(true);
+    try {
+      await sendImageMessage({
+        chatId: selectedChatId,
+        senderId: user.uid,
+        imageFile: file,
+        caption: '',
+      });
+      event.target.value = '';
+    } catch (error) {
+      console.error('Error sending image:', error);
+      toast.error('Failed to send image. Please try again.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const startVoiceRecording = async () => {
+    if (!voiceSupported || !user?.uid || !selectedChatId) {
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioFile = new File([audioBlob], `voice-${Date.now()}.webm`, {
+          type: 'audio/webm',
+        });
+
+        mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+
+        setSending(true);
+        try {
+          await sendVoiceMessage({
+            chatId: selectedChatId,
+            senderId: user.uid,
+            audioFile,
+          });
+        } catch (error) {
+          console.error('Error sending voice message:', error);
+          toast.error('Failed to send voice message. Please try again.');
+        } finally {
+          setSending(false);
+        }
+      };
+
+      recorder.start();
+      setRecording(true);
+    } catch (error) {
+      console.error('Unable to start recording:', error);
+      toast.error('Microphone access denied or unavailable.');
+    }
+  };
+
+  const stopVoiceRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+      setRecording(false);
+    }
+  };
+
+  const toggleVoiceRecording = async () => {
+    if (recording) {
+      stopVoiceRecording();
+    } else {
+      await startVoiceRecording();
     }
   };
 
@@ -99,9 +326,7 @@ const Chat = () => {
     return (
       <div className="min-h-screen bg-slate-100">
         <Navbar />
-        <div className="flex items-center justify-center p-6">
-          <p className="text-slate-600">Loading chats...</p>
-        </div>
+        <ChatSkeleton />
       </div>
     );
   }
@@ -111,15 +336,22 @@ const Chat = () => {
       <Navbar />
       
       {/* Page Header */}
-      <div className="border-b-4 border-orange-600 bg-orange-50 px-4 py-3">
+      <div className="border-b border-slate-200 bg-white px-4 py-3">
         <div className="mx-auto max-w-7xl">
-          <h2 className="text-xl font-bold text-orange-900">💬 CHAT PAGE</h2>
+          <h2 className="flex items-center gap-2 text-xl font-semibold text-slate-800">
+            <ChatIcon className="h-5 w-5 text-indigo-600" />
+            Chat Page
+          </h2>
         </div>
       </div>
 
-      <main className="mx-auto flex max-w-7xl gap-4 p-4 md:p-6" style={{ height: 'calc(100vh - 200px)' }}>
+      <main className="mx-auto flex h-[calc(100vh-152px)] max-w-7xl gap-4 p-4 md:h-[calc(100vh-200px)] md:p-6">
         {/* Chat List - Left Sidebar */}
-        <aside className="w-full rounded-2xl border border-slate-200 bg-white shadow-sm md:w-1/3">
+        <aside
+          className={`w-full rounded-2xl border border-slate-200 bg-white shadow-sm md:w-1/3 ${
+            isMobileView && selectedProfile ? 'hidden' : 'block'
+          }`}
+        >
           <div className="border-b border-slate-200 p-4">
             <h3 className="text-lg font-semibold text-slate-800">Messages</h3>
             <p className="mt-1 text-xs text-slate-500">
@@ -151,15 +383,8 @@ const Chat = () => {
                           {chat.otherProfile?.name || 'Unknown'}
                         </p>
                         <p className="text-xs text-slate-500 truncate">
-                          {chat.lastMessage?.text || 'No messages yet'}
+                          {chat.lastMessage || 'No messages yet'}
                         </p>
-                        {chat.lastMessage?.createdAt && (
-                          <p className="text-xs text-slate-400 mt-1">
-                            {new Date(
-                              chat.lastMessage.createdAt.toDate?.() || chat.lastMessage.createdAt
-                            ).toLocaleDateString()}
-                          </p>
-                        )}
                       </div>
                     </div>
                   </button>
@@ -176,12 +401,26 @@ const Chat = () => {
         </aside>
 
         {/* Chat Window - Right Side */}
-        <section className="w-full rounded-2xl border border-slate-200 bg-white shadow-sm md:w-2/3">
+        <section
+          className={`w-full rounded-2xl border border-slate-200 bg-white shadow-sm md:w-2/3 ${
+            isMobileView && !selectedProfile ? 'hidden' : 'block'
+          }`}
+        >
           {selectedProfile ? (
             <div className="flex h-full flex-col">
               {/* Chat Header */}
               <div className="border-b border-slate-200 p-4">
                 <div className="flex items-center gap-3">
+                  {isMobileView && (
+                    <button
+                      type="button"
+                      onClick={handleBackToList}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-100"
+                      aria-label="Back to chats list"
+                    >
+                      <BackIcon className="h-4 w-4" />
+                    </button>
+                  )}
                   <img
                     src={selectedProfile.photo || '/default-avatar.png'}
                     alt={selectedProfile.name}
@@ -211,7 +450,23 @@ const Chat = () => {
                               : 'bg-slate-100 text-slate-800'
                           }`}
                         >
-                          <p className="text-sm">{msg.text}</p>
+                          {msg.messageType === 'image' && msg.mediaUrl && (
+                            <img
+                              src={msg.mediaUrl}
+                              alt={msg.fileName || 'Shared image'}
+                              className="mb-2 max-h-52 max-w-full rounded-lg object-cover"
+                            />
+                          )}
+
+                          {msg.messageType === 'voice' && msg.mediaUrl && (
+                            <audio controls className="mb-2 w-full max-w-55">
+                              <source src={msg.mediaUrl} type="audio/webm" />
+                              Your browser does not support audio playback.
+                            </audio>
+                          )}
+
+                          {msg.text && <p className="text-sm whitespace-pre-wrap">{msg.text}</p>}
+
                           <p
                             className={`mt-1.5 text-xs ${
                               msg.senderId === user?.uid
@@ -243,36 +498,86 @@ const Chat = () => {
 
               {/* Message Input */}
               <form onSubmit={handleSendMessage} className="border-t border-slate-200 p-4">
-                <div className="flex gap-2">
+                <div className="mb-2 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleImageClick}
+                    disabled={sending}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-600 transition hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50"
+                    title="Attach image"
+                    aria-label="Attach image"
+                  >
+                    <AttachmentIcon className="h-4.5 w-4.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={toggleVoiceRecording}
+                    disabled={sending || !voiceSupported}
+                    className={`inline-flex h-10 w-10 items-center justify-center rounded-full text-white transition disabled:opacity-50 ${recording ? 'bg-rose-600 hover:bg-rose-700' : 'bg-slate-800 hover:bg-slate-900'}`}
+                    title={recording ? 'Stop recording and send voice note' : 'Record voice note'}
+                    aria-label={recording ? 'Stop recording and send voice note' : 'Record voice note'}
+                  >
+                    {recording ? <StopIcon className="h-4.5 w-4.5" /> : <MicIcon className="h-4.5 w-4.5" />}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => messageInputRef.current?.focus()}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+                    title="Focus message box"
+                    aria-label="Focus message box"
+                  >
+                    <KeyboardIcon className="h-4.5 w-4.5" />
+                  </button>
+
                   <input
-                    type="text"
-                    placeholder="Type a message..."
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelected}
+                    className="hidden"
+                  />
+
+                  {recording && <p className="text-xs font-medium text-rose-600">Recording voice note…</p>}
+                </div>
+
+                <div className="flex gap-2">
+                  <textarea
+                    ref={messageInputRef}
+                    placeholder="Write a message..."
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value)}
+                    onKeyDown={handleInputKeyDown}
                     disabled={sending}
-                    className="flex-1 rounded-full border border-slate-300 px-4 py-2.5 text-sm focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600"
+                    rows={1}
+                    className="flex-1 resize-none rounded-2xl border border-slate-300 px-4 py-2.5 text-sm focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600"
                   />
                   <button
                     type="submit"
                     disabled={sending || !messageText.trim()}
-                    className="rounded-full bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 transition"
+                    className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {sending ? (
                       <span className="flex items-center gap-2">
                         <span className="animate-spin">⟳</span>
                       </span>
                     ) : (
-                      'Send'
+                      <>
+                        <SendIcon className="h-4 w-4" />
+                        <span>Send</span>
+                      </>
                     )}
                   </button>
                 </div>
+                <p className="mt-2 text-xs text-slate-400">Press Enter to send • Shift+Enter for a new line</p>
               </form>
             </div>
           ) : (
             <div className="flex h-full items-center justify-center">
               <div className="text-center">
-                <div className="text-4xl mb-3">💬</div>
-                <p className="text-slate-500 font-medium">Select a chat to start messaging</p>
+                <ChatIcon className="mx-auto mb-3 h-10 w-10 text-slate-300" />
+                <p className="font-medium text-slate-600">Select a chat to start messaging</p>
                 <p className="text-slate-400 text-sm mt-2">
                   {chats.length === 0 ? 'No active chats' : 'Choose a conversation from the list'}
                 </p>
