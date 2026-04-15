@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const navItems = [
@@ -27,24 +27,40 @@ const Navbar = () => {
   };
 
   const getNavItemClassName = ({ isActive }) =>
-    `rounded-lg px-3 py-2 text-sm font-medium transition ${
-      isActive ? 'bg-indigo-100 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'
+    `rounded-xl px-3 py-2 text-sm font-semibold transition ${
+      isActive
+        ? 'bg-indigo-100 text-indigo-700 shadow-sm ring-1 ring-indigo-200'
+        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
     }`;
 
   const getMobileNavItemClassName = ({ isActive }) =>
-    `block rounded-lg px-3 py-2 text-sm font-medium transition ${
+    `block rounded-xl px-3 py-2 text-sm font-semibold transition ${
       isActive
-        ? 'bg-indigo-100 text-indigo-700'
+        ? 'bg-indigo-100 text-indigo-700 ring-1 ring-indigo-200'
         : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
     }`;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
       <nav className="mx-auto w-full max-w-6xl px-4 py-3">
         <div className="flex items-center justify-between gap-3">
-          <div className="text-lg font-bold text-indigo-700">MatchMitra</div>
+          <Link
+            to="/dashboard"
+            className="group inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2 py-1.5 transition hover:border-indigo-200 hover:bg-indigo-50"
+            aria-label="Go to MatchMitra dashboard"
+          >
+            <img
+              src="/The_Match_mitra_logo.jpeg"
+              alt="MatchMitra logo"
+              className="h-9 w-9 rounded-lg object-cover ring-1 ring-slate-200"
+            />
+            <div className="hidden sm:block">
+              <p className="text-base font-extrabold tracking-tight text-indigo-700">MatchMitra</p>
+              <p className="-mt-0.5 text-[11px] font-medium text-slate-500">Because Every Match Matters</p>
+            </div>
+          </Link>
 
-          <div className="hidden gap-2 md:flex">
+          <div className="hidden items-center gap-1 rounded-2xl border border-slate-200 bg-slate-50 p-1 md:flex">
             {navItems.map((item) => (
               <NavLink
                 key={item.to}
@@ -79,7 +95,7 @@ const Navbar = () => {
             <button
               type="button"
               onClick={handleLogout}
-              className="hidden rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-700 md:inline-flex"
+              className="hidden rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 md:inline-flex"
             >
               Logout
             </button>
@@ -104,7 +120,7 @@ const Navbar = () => {
             <button
               type="button"
               onClick={handleLogout}
-              className="mt-1 w-full rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
+              className="mt-1 w-full rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
             >
               Logout
             </button>

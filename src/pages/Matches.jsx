@@ -4,12 +4,15 @@ import FilterBar from '../components/FilterBar';
 import Navbar from '../components/Navbar';
 import ProfileModal from '../components/ProfileModal';
 import ProfileCard from '../components/ProfileCard';
+import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
 import {
   blockUser,
+  calculateMatchScore,
   getAllProfiles,
   getProfileByUid,
   getInterestsForUser,
+  getReportsByReporter,
   incrementProfileViews,
   likeUser,
   reportUser,
@@ -22,6 +25,17 @@ const MatchIcon = ({ className = '' }) => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 20s-7-4.4-9.2-8.5A5.6 5.6 0 0 1 12 5.6a5.6 5.6 0 0 1 9.2 5.9C19 15.6 12 20 12 20Z" />
   </svg>
 );
+
+const getRecentViewsKey = (uid) => `matchmitra_recent_views_${uid}`;
+
+const storeRecentViewedProfile = (currentUid, viewedUid) => {
+  if (!currentUid || !viewedUid || currentUid === viewedUid) return;
+
+  const storageKey = getRecentViewsKey(currentUid);
+  const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
+  const next = [viewedUid, ...existing.filter((uid) => uid !== viewedUid)].slice(0, 10);
+  localStorage.setItem(storageKey, JSON.stringify(next));
+};
 
 const MatchesSkeleton = () => (
   <main className="mx-auto max-w-6xl space-y-6 p-4 md:p-6">
@@ -89,8 +103,33 @@ const InterestRequestCard = ({ interest, senderProfile, onAction }) => {
   );
 };
 
+const ActivityProfileCard = ({ profile, label, tone = 'slate' }) => {
+  const toneClasses = tone === 'rose'
+    ? 'bg-rose-100 text-rose-700'
+    : 'bg-indigo-100 text-indigo-700';
+
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-center gap-3">
+        <img
+          src={profile?.photo || profile?.photoURL || '/default-avatar.png'}
+          alt={profile?.name || 'Unknown User'}
+          className="h-12 w-12 rounded-full object-cover ring-1 ring-slate-200"
+        />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-slate-900">{profile?.name || 'Unknown User'}</p>
+          <p className="truncate text-xs text-slate-500">{profile?.profession || 'Profile activity'}</p>
+        </div>
+        <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${toneClasses}`}>
+          {label}
+        </span>
+      </div>
+    </article>
+  );
+};
+
 const Matches = () => {
-  const { user } = useAuth();
+  const { user, profile: currentProfile } = useAuth();
   const [filters, setFilters] = useState({
     minAge: '',
     maxAge: '',
@@ -102,46 +141,74 @@ const Matches = () => {
   const [allProfiles, setAllProfiles] = useState([]);
   const [interests, setInterests] = useState({ received: [], sent: [] });
   const [blockedUsers, setBlockedUsers] = useState([]);
+  const [likedUsers, setLikedUsers] = useState([]);
+  const [reportedUsers, setReportedUsers] = useState([]);
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(true);
   const [selectedProfile, setSelectedProfile] = useState(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     const loadProfiles = async () => {
       if (!user?.uid) {
-        setLoading(false);
+        if (isMounted) setLoading(false);
         return;
       }
 
-      setLoading(true);
+      if (isMounted) setLoading(true);
 
       try {
-        const [profilesData, interestsData, currentProfile] = await Promise.all([
+        const [profilesResult, interestsResult, profileResult, reportsResult] = await Promise.allSettled([
           getAllProfiles(),
           getInterestsForUser(user.uid),
           getProfileByUid(user.uid),
+          getReportsByReporter(user.uid),
         ]);
 
-        const blocked = currentProfile?.blockedUsers || [];
+        const profilesData = profilesResult.status === 'fulfilled' ? profilesResult.value : [];
+        const interestsData = interestsResult.status === 'fulfilled'
+          ? interestsResult.value
+          : { received: [], sent: [] };
+        const loadedProfile = profileResult.status === 'fulfilled' ? profileResult.value : null;
+        const reportsData = reportsResult.status === 'fulfilled' ? reportsResult.value : [];
+
+        const blocked = Array.isArray(loadedProfile?.blockedUsers) ? loadedProfile.blockedUsers : [];
         const filtered = profilesData.filter(
           (profile) => profile.uid !== user?.uid && !blocked.includes(profile.uid)
         );
+
+        if (!isMounted) return;
 
         setAllProfiles(profilesData);
         setProfiles(filtered);
         setInterests(interestsData);
         setBlockedUsers(blocked);
+        setLikedUsers(Array.isArray(loadedProfile?.likedUsers) ? loadedProfile.likedUsers : []);
+        setReportedUsers([...new Set((reportsData || []).map((item) => item.reportedUid).filter(Boolean))]);
 
-        await Promise.all(filtered.slice(0, 5).map((item) => incrementProfileViews(item.uid)));
+        const hasCriticalLoadError = profilesResult.status === 'rejected' || profileResult.status === 'rejected';
+        if (hasCriticalLoadError) {
+          console.error('Matches partial load failure:', {
+            profilesError: profilesResult.status === 'rejected' ? profilesResult.reason : null,
+            profileError: profileResult.status === 'rejected' ? profileResult.reason : null,
+          });
+          toast.error('Some matches data could not be loaded.', { id: 'matches-load-error' });
+        }
+
       } catch (error) {
         console.error('Error loading matches data:', error);
-        toast.error('Unable to load matches right now.');
+        toast.error('Unable to load matches right now.', { id: 'matches-load-error' });
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     loadProfiles();
+
+    return () => {
+      isMounted = false;
+    };
   }, [user?.uid]);
 
   const filteredProfiles = useMemo(() => {
@@ -162,6 +229,20 @@ const Matches = () => {
       return ageMatch && locationMatch && professionMatch && religionCasteMatch;
     });
   }, [profiles, filters]);
+
+  const likedProfiles = useMemo(() => {
+    if (!likedUsers.length) return [];
+    return likedUsers
+      .map((uid) => allProfiles.find((item) => item.uid === uid))
+      .filter(Boolean);
+  }, [likedUsers, allProfiles]);
+
+  const reportedProfiles = useMemo(() => {
+    if (!reportedUsers.length) return [];
+    return reportedUsers
+      .map((uid) => allProfiles.find((item) => item.uid === uid))
+      .filter(Boolean);
+  }, [reportedUsers, allProfiles]);
 
   const handleSendInterest = async (profile) => {
     if (!user?.uid) return;
@@ -185,6 +266,7 @@ const Matches = () => {
       const message = isMatch ? `It's a match with ${profile.name}!` : `Liked ${profile.name}`;
       setStatus(message);
       toast.success(message);
+      setLikedUsers((prev) => (prev.includes(profile.uid) ? prev : [profile.uid, ...prev]));
       setTimeout(() => setStatus(''), 3000);
     } catch (error) {
       console.error('Error liking user:', error);
@@ -199,6 +281,7 @@ const Matches = () => {
       await reportUser({ reporterUid: user.uid, reportedUid: profile.uid, reason: 'Suspicious behavior' });
       setStatus(`Reported ${profile.name}. Our team will review.`);
       toast.success(`Reported ${profile.name}`);
+      setReportedUsers((prev) => (prev.includes(profile.uid) ? prev : [profile.uid, ...prev]));
       setTimeout(() => setStatus(''), 3000);
     } catch (error) {
       console.error('Error reporting user:', error);
@@ -230,7 +313,11 @@ const Matches = () => {
     }
   };
 
-  const handleViewDetails = (profile) => {
+  const handleViewDetails = async (profile) => {
+    if (user?.uid) {
+      await incrementProfileViews(profile.uid, user.uid);
+      storeRecentViewedProfile(user.uid, profile.uid);
+    }
     setSelectedProfile(profile);
   };
 
@@ -314,6 +401,40 @@ const Matches = () => {
         </section>
 
         <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+          <h2 className="text-lg font-semibold text-slate-900">Liked Profiles</h2>
+          <p className="mt-1 text-sm text-slate-500">People you liked will appear here.</p>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {likedProfiles.length > 0 ? (
+              likedProfiles.map((profile) => (
+                <ActivityProfileCard key={profile.uid} profile={profile} label="liked" tone="indigo" />
+              ))
+            ) : (
+              <div className="md:col-span-2 rounded-2xl border border-dashed border-slate-200 p-6 text-center">
+                <p className="text-sm text-slate-500">No liked profiles yet.</p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+          <h2 className="text-lg font-semibold text-slate-900">Reported Profiles</h2>
+          <p className="mt-1 text-sm text-slate-500">People you reported are listed here.</p>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {reportedProfiles.length > 0 ? (
+              reportedProfiles.map((profile) => (
+                <ActivityProfileCard key={profile.uid} profile={profile} label="reported" tone="rose" />
+              ))
+            ) : (
+              <div className="md:col-span-2 rounded-2xl border border-dashed border-slate-200 p-6 text-center">
+                <p className="text-sm text-slate-500">No reported profiles.</p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
           <div className="mb-4">
             <h2 className="text-lg font-semibold text-slate-900">Recommended Profiles</h2>
             <p className="mt-1 text-sm text-slate-500">Based on your current filters and profile preferences.</p>
@@ -325,6 +446,7 @@ const Matches = () => {
                 <ProfileCard
                   key={profile.uid}
                   profile={profile}
+                  matchScore={calculateMatchScore(currentProfile || {}, profile)}
                   onLike={handleLikeUser}
                   onSendInterest={handleSendInterest}
                   onViewDetails={handleViewDetails}
@@ -348,6 +470,7 @@ const Matches = () => {
         isOpen={Boolean(selectedProfile)}
         onClose={() => setSelectedProfile(null)}
       />
+      <Footer />
     </div>
   );
 };

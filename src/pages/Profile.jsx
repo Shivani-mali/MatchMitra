@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
 import {
   calculateProfileCompletion,
@@ -44,12 +45,16 @@ const Profile = () => {
   const [message, setMessage] = useState('');
   const [isEditing, setIsEditing] = useState(false);
 
+  const getPhotoStorageKey = (uid) => `matchmitra_profile_photo_${uid}`;
+
   useEffect(() => {
     const loadProfile = async () => {
       if (!user?.uid) return;
       try {
         const data = await getProfileByUid(user.uid);
         if (data) {
+          const localPhoto = localStorage.getItem(getPhotoStorageKey(user.uid));
+          const savedPhoto = data.photo || data.photoURL || localPhoto || '';
           setIsEditing(true);
           setProfile({
             name: data.name || '',
@@ -62,7 +67,7 @@ const Profile = () => {
             education: data.education || '',
             hobbies: data.hobbies ? data.hobbies.join(', ') : '',
             bio: data.bio || '',
-            photoURL: '',
+            photoURL: savedPhoto,
             height: data.height || '',
             maritalStatus: data.maritalStatus || '',
             language: data.language || '',
@@ -98,6 +103,27 @@ const Profile = () => {
       ...prev,
       partnerPreferences: { ...prev.partnerPreferences, [field]: value },
     }));
+
+  const handlePhotoChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setMessage('Please select a valid image file.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const photoData = typeof reader.result === 'string' ? reader.result : '';
+      updateField('photoURL', photoData);
+
+      if (user?.uid && photoData) {
+        localStorage.setItem(getPhotoStorageKey(user.uid), photoData);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const onSubmit = async (event) => {
     event.preventDefault();
@@ -212,7 +238,24 @@ const Profile = () => {
 
             <div className="md:col-span-2">
               <label className="mb-1 block text-sm font-medium text-slate-700">Profile Photo</label>
-              <p className="text-sm text-slate-500">Photo upload will be available soon.</p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <img
+                  src={profile.photoURL || 'https://placehold.co/120x120?text=User'}
+                  alt="Profile preview"
+                  className="h-20 w-20 rounded-full object-cover ring-1 ring-slate-200"
+                />
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoChange}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  />
+                  <p className="mt-1 text-xs text-slate-500">
+                    Upload image from your device. It is saved in your profile and also cached in local storage.
+                  </p>
+                </div>
+              </div>
             </div>
 
             {message && (
@@ -233,6 +276,7 @@ const Profile = () => {
           </form>
         </section>
       </main>
+      <Footer />
     </div>
   );
 };

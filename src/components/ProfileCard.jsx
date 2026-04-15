@@ -42,22 +42,25 @@ const ProfileCard = ({
         }
       }}
     >
-      <div className="flex gap-4 p-5 pr-16">
+      <div className="flex flex-col gap-4 p-4 pr-14 sm:flex-row sm:p-5 sm:pr-16">
         <img
           src={profile.photo || profile.photoURL || 'https://placehold.co/120x120?text=User'}
           alt={profile.name || 'User'}
-          className="h-24 w-24 rounded-full object-cover"
+          className="mx-auto h-20 w-20 rounded-full object-cover sm:mx-0 sm:h-24 sm:w-24"
         />
 
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="text-lg font-semibold text-slate-900 truncate">{profile.name || 'Unknown'}</h3>
+              <h3 className="text-lg font-semibold text-slate-900 truncate pr-2">{profile.name || 'Unknown'}</h3>
               <p className="mt-1 text-sm text-slate-500 truncate">
                 {profile.age ? `${profile.age} yrs` : 'Age N/A'} · {profile.location || 'Location unknown'}
               </p>
-               {/* Trust Score & Verified Badge */}
-               <div className="mt-2 flex items-center gap-2">
+               {/* Match / Trust / Verified */}
+               <div className="mt-2 flex flex-wrap items-center gap-2">
+                 <span className="inline-flex w-max shrink-0 whitespace-nowrap rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                   {matchScore?.score ?? 0}% Match
+                 </span>
                  {profile.isVerified && (
                    <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">
                      ✔️ Verified
@@ -80,11 +83,7 @@ const ProfileCard = ({
                 {profile.bio || 'No bio available.'}
               </p>
             </div>
-            <div className="shrink-0 text-right">
-              <span className="inline-flex w-max shrink-0 whitespace-nowrap rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                {matchScore?.score ?? 0}% Match
-              </span>
-            </div>
+            <div className="shrink-0 text-right" />
           </div>
         </div>
       </div>
@@ -112,7 +111,7 @@ const ProfileCard = ({
         </div>
       </div>
 
-      <div className="absolute right-3 top-3 flex items-start gap-2">
+      <div className="absolute right-2 top-2 flex items-start gap-2 sm:right-3 sm:top-3">
         <button
           type="button"
           onClick={() => setMenuOpen((open) => !open)}

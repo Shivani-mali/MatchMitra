@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firebase';
 import {
@@ -327,6 +328,7 @@ const Chat = () => {
       <div className="min-h-screen bg-slate-100">
         <Navbar />
         <ChatSkeleton />
+        <Footer />
       </div>
     );
   }
@@ -586,6 +588,7 @@ const Chat = () => {
           )}
         </section>
       </main>
+      <Footer />
     </div>
   );
 };

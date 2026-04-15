@@ -311,17 +311,40 @@ export const reportUser = async ({ reporterUid, reportedUid, reason }) => {
   });
 };
 
+export const getReportsByReporter = async (reporterUid) => {
+  if (!reporterUid) return [];
+
+  try {
+    const reporterQuery = query(reportsCollection, where('reporterUid', '==', reporterUid));
+    const snapshot = await getDocs(reporterQuery);
+
+    return snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() }));
+  } catch (error) {
+    console.error('Error fetching reports by reporter:', error);
+    return [];
+  }
+};
+
 export const incrementProfileViews = async (uid, viewerUid) => {
+  if (!uid || !viewerUid || uid === viewerUid) return;
+
   const profileRef = doc(db, 'users', uid);
   const existing = await getDoc(profileRef);
   if (!existing.exists()) return;
 
   const currentViews = existing.data()?.profileViews ?? 0;
-  const viewedUsers = existing.data()?.viewedUsers ?? [];
-  if (!viewedUsers.includes(viewerUid)) {
-    viewedUsers.push(viewerUid);
+  const viewedUsers = (existing.data()?.viewedUsers ?? []).filter(Boolean);
+
+  if (viewedUsers.includes(viewerUid)) {
+    return;
   }
-  await updateDoc(profileRef, { profileViews: currentViews + 1, viewedUsers, lastActive: serverTimestamp() });
+
+  viewedUsers.push(viewerUid);
+  await updateDoc(profileRef, {
+    profileViews: currentViews + 1,
+    viewedUsers,
+    lastActive: serverTimestamp(),
+  });
 };
 
 export const calculateMatchScore = (userProfile, candidateProfile) => {

@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import ProfileModal from '../components/ProfileModal';
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
 import {
+  calculateMatchScore,
   getAllProfiles,
   getChatsForUser,
   getInterestsForUser,
   getSuggestedMatches,
   blockUser,
+  incrementProfileViews,
   likeUser,
   reportUser,
   respondToInterest,
@@ -43,8 +46,40 @@ const SparkIcon = ({ className = '' }) => (
   </svg>
 );
 
-const StatCard = ({ label, value, icon, tone = 'text-indigo-600' }) => (
-  <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
+const getRecentViewsKey = (uid) => `matchmitra_recent_views_${uid}`;
+
+const getRecentViewedIds = (uid) => {
+  if (!uid) return [];
+
+  try {
+    return JSON.parse(localStorage.getItem(getRecentViewsKey(uid)) || '[]');
+  } catch {
+    return [];
+  }
+};
+
+const storeRecentViewedProfile = (currentUid, viewedUid) => {
+  if (!currentUid || !viewedUid || currentUid === viewedUid) return;
+
+  const existing = getRecentViewedIds(currentUid);
+  const next = [viewedUid, ...existing.filter((uid) => uid !== viewedUid)].slice(0, 10);
+  localStorage.setItem(getRecentViewsKey(currentUid), JSON.stringify(next));
+};
+
+const StatCard = ({ label, value, icon, tone = 'text-indigo-600', onClick }) => (
+  <article
+    className={`rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md ${onClick ? 'cursor-pointer' : ''}`}
+    onClick={onClick}
+    role={onClick ? 'button' : undefined}
+    tabIndex={onClick ? 0 : undefined}
+    onKeyDown={(event) => {
+      if (!onClick) return;
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        onClick();
+      }
+    }}
+  >
     <div className="flex items-center justify-between gap-4">
       <div>
         <p className="text-sm text-slate-500">{label}</p>
@@ -180,6 +215,29 @@ const ChatCard = ({ chat }) => {
   );
 };
 
+const RecentViewedCard = ({ profile, onOpen }) => (
+  <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
+    <div className="flex items-center gap-3">
+      <img
+        src={profile?.photo || profile?.photoURL || '/default-avatar.png'}
+        alt={profile?.name || 'Unknown User'}
+        className="h-10 w-10 rounded-full object-cover ring-1 ring-slate-200"
+      />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-slate-900">{profile?.name || 'Unknown User'}</p>
+        <p className="truncate text-xs text-slate-500">{profile?.profession || 'Recently viewed profile'}</p>
+      </div>
+      <button
+        type="button"
+        onClick={() => onOpen(profile)}
+        className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-700"
+      >
+        View
+      </button>
+    </div>
+  </article>
+);
+
 const DashboardSkeleton = () => (
   <main className="mx-auto max-w-6xl space-y-6 p-4 md:p-6">
     <section className="rounded-3xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
@@ -200,12 +258,20 @@ const DashboardSkeleton = () => (
 
 const Dashboard = () => {
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
   const [interests, setInterests] = useState({ received: [], sent: [] });
   const [suggestedMatches, setSuggestedMatches] = useState([]);
   const [chats, setChats] = useState([]);
   const [allProfiles, setAllProfiles] = useState([]);
+  const [recentViewedProfiles, setRecentViewedProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedProfile, setSelectedProfile] = useState(null);
+
+  const pendingInterestsCount = interests.received.filter((item) => item.status === 'pending').length;
+  const acceptedMatchesCount = [...interests.received, ...interests.sent].filter((item) => item.status === 'accepted').length;
+  const genuineProfileViews = Array.isArray(profile?.viewedUsers)
+    ? profile.viewedUsers.filter(Boolean).length
+    : profile?.profileViews ?? 0;
 
   useEffect(() => {
     const loadData = async () => {
@@ -228,6 +294,13 @@ const Dashboard = () => {
         setSuggestedMatches(matches);
         setChats(userChats);
         setAllProfiles(profiles);
+
+        const recentIds = getRecentViewedIds(user.uid);
+        const recentProfiles = recentIds
+          .map((uid) => profiles.find((entry) => entry.uid === uid))
+          .filter(Boolean)
+          .slice(0, 4);
+        setRecentViewedProfiles(recentProfiles);
       } catch (error) {
         console.error('Failed to load dashboard data:', error);
         toast.error('Unable to load dashboard right now.');
@@ -264,7 +337,15 @@ const Dashboard = () => {
     }
   };
 
-  const handleViewDetails = (candidate) => {
+  const handleViewDetails = async (candidate) => {
+    if (user?.uid) {
+      await incrementProfileViews(candidate.uid, user.uid);
+      storeRecentViewedProfile(user.uid, candidate.uid);
+      setRecentViewedProfiles((prev) => {
+        const next = [candidate, ...prev.filter((item) => item.uid !== candidate.uid)].slice(0, 4);
+        return next;
+      });
+    }
     setSelectedProfile(candidate);
   };
 
@@ -367,10 +448,28 @@ const Dashboard = () => {
 
         {/* Stats Cards */}
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <StatCard label="Profile Views" value={profile?.profileViews ?? 0} icon={<EyeIcon className="h-5 w-5" />} />
-          <StatCard label="Interests Received" value={interests.received.length} icon={<HeartIcon className="h-5 w-5" />} tone="text-rose-600" />
-          <StatCard label="Matches Suggested" value={suggestedMatches.length} icon={<SparkIcon className="h-5 w-5" />} tone="text-violet-600" />
-          <StatCard label="Active Chats" value={chats.length} icon={<ChatIcon className="h-5 w-5" />} tone="text-sky-600" />
+          <StatCard label="Profile Views" value={genuineProfileViews} icon={<EyeIcon className="h-5 w-5" />} />
+          <StatCard
+            label="Pending Interests"
+            value={pendingInterestsCount}
+            icon={<HeartIcon className="h-5 w-5" />}
+            tone="text-rose-600"
+            onClick={() => navigate('/matches')}
+          />
+          <StatCard
+            label="Accepted Matches"
+            value={acceptedMatchesCount}
+            icon={<SparkIcon className="h-5 w-5" />}
+            tone="text-violet-600"
+            onClick={() => navigate('/matches')}
+          />
+          <StatCard
+            label="Active Chats"
+            value={chats.length}
+            icon={<ChatIcon className="h-5 w-5" />}
+            tone="text-sky-600"
+            onClick={() => navigate('/chat')}
+          />
         </section>
 
         {/* Detailed Sections */}
@@ -414,6 +513,9 @@ const Dashboard = () => {
             <div className="mb-4">
               <h2 className="text-lg font-semibold text-slate-900">Suggested Matches</h2>
               <p className="text-sm text-slate-500">New people that fit your profile preferences.</p>
+              <Link to="/matches" className="mt-2 inline-block text-sm font-semibold text-indigo-600 hover:text-indigo-700">
+                Open Matches page →
+              </Link>
             </div>
             <div className="space-y-3">
               {suggestedMatches.length > 0 ? (
@@ -421,6 +523,7 @@ const Dashboard = () => {
                   <MatchProfileCard
                     key={match.uid}
                     profile={match}
+                    matchScore={calculateMatchScore(profile || {}, match)}
                     onLike={handleLikeUser}
                     onSendInterest={handleSendInterest}
                     onViewDetails={handleViewDetails}
@@ -440,6 +543,25 @@ const Dashboard = () => {
             >
               View all matches →
             </Link>
+          </section>
+
+          {/* Recent Messages */}
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold text-slate-900">Recently Viewed</h2>
+              <p className="text-sm text-slate-500">Profiles you recently opened from cards.</p>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              {recentViewedProfiles.length > 0 ? (
+                recentViewedProfiles.map((entry) => (
+                  <RecentViewedCard key={entry.uid} profile={entry} onOpen={handleViewDetails} />
+                ))
+              ) : (
+                <div className="col-span-2 rounded-2xl border border-dashed border-slate-200 p-6 text-center">
+                  <p className="text-sm text-slate-500">No recently viewed profiles yet.</p>
+                </div>
+              )}
+            </div>
           </section>
 
           {/* Recent Messages */}
@@ -478,6 +600,7 @@ const Dashboard = () => {
 
       </main>
       )}
+      <Footer />
     </div>
   );
 };
