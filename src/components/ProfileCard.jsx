@@ -1,46 +1,153 @@
-const ProfileCard = ({ profile, onSendInterest, onReport }) => {
-  return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex items-start gap-4">
-        <img
-          src={profile.photo || profile.photoURL || 'https://placehold.co/100x100?text=User'}
-          alt={profile.name || 'User'}
-          className="h-20 w-20 rounded-xl object-cover"
-        />
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <h3 className="text-lg font-semibold text-slate-800">{profile.name}</h3>
-            {profile.verified && (
-              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                Verified
-              </span>
-            )}
-          </div>
+import { useState } from 'react';
 
-          <p className="text-sm text-slate-600">
-            {profile.age} • {profile.gender} • {profile.location}
-          </p>
-          <p className="mt-1 text-sm text-slate-500">{profile.profession}</p>
-          <p className="mt-2 line-clamp-2 text-sm text-slate-500">{profile.bio}</p>
-          <p className="mt-2 text-xs text-slate-400">Trust Score: {profile.trustScore ?? 50}</p>
+const ProfileCard = ({
+  profile,
+  matchScore,
+  onLike,
+  onUnlike,
+  onSkip,
+  onViewDetails,
+  onSendInterest,
+  onReport,
+  onBlock,
+  onUnblock,
+  isLiked,
+  isBlocked,
+  showUnlike,
+}) => {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const actionLabel = showUnlike ? '💔 Unlike' : '❤️ Like';
+
+  return (
+    <article className="relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-md transition hover:shadow-lg">
+      <div className="flex gap-4 p-5">
+        <img
+          src={profile.photo || profile.photoURL || 'https://placehold.co/120x120?text=User'}
+          alt={profile.name || 'User'}
+          className="h-24 w-24 rounded-full object-cover"
+        />
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="text-lg font-semibold text-slate-900 truncate">{profile.name || 'Unknown'}</h3>
+              <p className="mt-1 text-sm text-slate-500 truncate">
+                {profile.age ? `${profile.age} yrs` : 'Age N/A'} · {profile.location || 'Location unknown'}
+              </p>
+              <p className="mt-3 text-sm font-medium text-slate-700 truncate">
+                {profile.profession || 'Profession not specified'}
+              </p>
+              <p className="mt-2 max-w-full truncate text-sm text-slate-500">
+                {profile.bio || 'No bio available.'}
+              </p>
+            </div>
+            <div className="shrink-0 text-right">
+              <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                {matchScore?.score ?? 0}% Match
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="border-t border-slate-200 px-5 py-4">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => (showUnlike ? onUnlike(profile) : onLike(profile))}
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white transition hover:bg-indigo-700"
+          >
+            {actionLabel}
+          </button>
+          <button
+            type="button"
+            onClick={() => onSendInterest(profile)}
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
+          >
+            💌 Send Interest
+          </button>
+        </div>
+      </div>
+
+      <div className="absolute right-4 top-4">
         <button
           type="button"
-          onClick={() => onSendInterest(profile)}
-          className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+          onClick={() => setMenuOpen((open) => !open)}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-100"
+          aria-label="More actions"
         >
-          Send Interest
+          ⋮
         </button>
-        <button
-          type="button"
-          onClick={() => onReport(profile)}
-          className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 hover:bg-rose-100"
-        >
-          Report User
-        </button>
+
+        {menuOpen && (
+          <div className="absolute right-0 top-11 z-10 w-40 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+            <button
+              type="button"
+              onClick={() => {
+                onViewDetails(profile);
+                setMenuOpen(false);
+              }}
+              className="w-full px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50"
+            >
+              View details
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onSkip(profile);
+                setMenuOpen(false);
+              }}
+              className="w-full px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50"
+            >
+              Skip
+            </button>
+            {showUnlike && isLiked && (
+              <button
+                type="button"
+                onClick={() => {
+                  onUnlike(profile);
+                  setMenuOpen(false);
+                }}
+                className="w-full px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50"
+              >
+                Unlike
+              </button>
+            )}
+            {isBlocked ? (
+              <button
+                type="button"
+                onClick={() => {
+                  onUnblock(profile);
+                  setMenuOpen(false);
+                }}
+                className="w-full px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50"
+              >
+                Unblock
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  onBlock(profile);
+                  setMenuOpen(false);
+                }}
+                className="w-full px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50"
+              >
+                Block
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                onReport(profile);
+                setMenuOpen(false);
+              }}
+              className="w-full px-4 py-3 text-left text-sm text-red-600 transition hover:bg-slate-50"
+            >
+              Report
+            </button>
+          </div>
+        )}
       </div>
     </article>
   );
