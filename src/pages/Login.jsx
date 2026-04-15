@@ -3,6 +3,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { db } from '../services/firebase';
 import { useAuth } from '../context/AuthContext';
+import Loader from '../components/Loader';
 
 const Login = () => {
   const { loginWithEmail, loginWithGoogle } = useAuth();
@@ -58,6 +59,10 @@ const Login = () => {
     }
   };
 
+  if (loading) {
+    return <Loader message="Logging in..." />;
+  }
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
       <section className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg">
@@ -87,7 +92,7 @@ const Login = () => {
             disabled={loading}
             className="w-full rounded-lg bg-indigo-600 px-3 py-2 font-medium text-white hover:bg-indigo-700 disabled:opacity-70"
           >
-            {loading ? 'Please wait...' : 'Login'}
+            Login
           </button>
         </form>
 
