@@ -1,119 +1,104 @@
-# MatchMitra — Because Every Match Matters
+# 💍 MatchMitra — Because Every Match Matters
 
-A full-stack marriage bureau platform built with:
+<div align="center">
+  <img src="./The_Match_mitra_logo.jpeg" alt="MatchMitra Logo" width="200"/>
+  <h3>A Premium Matrimonial Matchmaking Platform</h3>
+  <p><b>Built by Team Dreamers</b></p>
+</div>
 
-- Frontend: React + Vite + Tailwind CSS
-- Backend: Node.js + Express
-- Database/Auth/Storage: Firebase (Firestore, Authentication, Storage)
+---
 
-## Features
+## 🌟 Overview
 
-- Email/password + Google authentication
-- Profile creation with completion percentage
-- Match discovery with filters
-- Interest workflow (pending/accepted/rejected)
-- Chat unlocked only for accepted interests
-- Trust & safety reporting with trust score and verified badge fields
-- Dashboard with profile views/interests/matches/messages metrics
-- Rule-based chatbot for common help queries
+**MatchMitra** is a modern, secure, and feature-rich matrimonial platform designed to help individuals find their perfect life partners. Built with a focus on trust, safety, and real-time interaction, MatchMitra streamlines the journey from discovery to conversation.
 
-## Project Structure
+## ✨ Key Features
 
-```text
-.
-├─ src/
-│  ├─ components/
-│  │  ├─ Navbar.jsx
-│  │  ├─ ProfileCard.jsx
-│  │  ├─ FilterBar.jsx
-│  │  ├─ ChatBox.jsx
-│  │  ├─ ChatbotWidget.jsx
-│  │  └─ ProtectedRoute.jsx
-│  ├─ context/
-│  │  └─ AuthContext.jsx
-│  ├─ pages/
-│  │  ├─ Login.jsx
-│  │  ├─ Signup.jsx
-│  │  ├─ Profile.jsx
-│  │  ├─ Matches.jsx
-│  │  ├─ Chat.jsx
-│  │  └─ Dashboard.jsx
-│  ├─ services/
-│  │  ├─ firebase.js
-│  │  ├─ firestoreService.js
-│  │  └─ api.js
-│  ├─ firebase/
-│  │  └─ config.js
-│  ├─ App.jsx
-│  └─ main.jsx
-├─ server/
-│  ├─ middleware/
-│  │  └─ auth.js
-│  ├─ routes/
-│  │  ├─ users.js
-│  │  ├─ interests.js
-│  │  ├─ chat.js
-│  │  └─ reports.js
-│  ├─ firebaseAdmin.js
-│  ├─ index.js
-│  ├─ package.json
-│  └─ .env.example
-├─ .env
-└─ .env.example
-```
+- 🔐 **Secure Authentication**: Multi-method login via Email/Password and Google OAuth.
+- 👤 **Smart Profiles**: Comprehensive profile creation with real-time completion tracking and automated trust scoring.
+- 🔍 **Advanced Discovery**: Intelligent filtering by age, location, profession, religion, and more.
+- 💌 **Interest Workflow**: A seamless "Send → Review → Accept/Reject" interest system that ensures privacy.
+- 💬 **Real-time Communication**: Instant messaging with support for text, images, and voice notes—unlocked only upon mutual interest acceptance.
+- 🛡️ **Trust & Safety**: Built-in reporting system, automated trust scores, and admin-verified badges to ensure a safe community.
+- 📊 **User Dashboard**: A personalized hub to track profile views, interests, matches, and message activity.
+- 🤖 **Helpful AI**: Integrated rule-based chatbot to assist users with common queries and platform navigation.
 
-## Firebase Setup Instructions
-
-1. Create a Firebase project.
-2. Enable Authentication providers:
-	- Email/Password
-	- Google
-3. Create Firestore database in production or test mode.
-4. Enable Firebase Storage.
-5. Add a web app in Firebase and copy config values.
-6. Fill frontend environment variables in root `.env`:
-
-```env
-VITE_FIREBASE_API_KEY=...
-VITE_FIREBASE_AUTH_DOMAIN=...
-VITE_FIREBASE_PROJECT_ID=...
-VITE_FIREBASE_STORAGE_BUCKET=...
-VITE_FIREBASE_MESSAGING_SENDER_ID=...
-VITE_FIREBASE_APP_ID=...
-VITE_API_BASE_URL=http://localhost:5000/api
-```
-
-7. For backend admin access, set `server/.env` based on `server/.env.example`:
-	- Either set `FIREBASE_SERVICE_ACCOUNT_JSON` (single-line JSON)
-	- Or set `GOOGLE_APPLICATION_CREDENTIALS` to your service account file path
-
-## Run the App
+## 🛠️ Tech Stack
 
 ### Frontend
+- **React 19**: Modern UI library for a responsive and high-performance experience.
+- **Vite**: Ultra-fast build tool and development server.
+- **Tailwind CSS**: Utility-first CSS framework for premium, responsive designs.
+- **Framer Motion**: Smooth animations and transitions.
+- **Lucide React**: Clean and consistent iconography.
 
-```bash
-npm install
-npm run dev
+### Backend & Infrastructure
+- **Firebase**:
+  - **Firestore**: Real-time NoSQL database for profiles, interests, and chats.
+  - **Authentication**: Secure user management and OAuth.
+  - **Storage**: Scalable media storage for profile photos and chat attachments.
+  - **Security Rules**: Robust server-side validation and authorization.
+- **Node.js & Express**: (Optional/Admin) Backend services for extended logic.
+
+## 🏗️ Architecture
+
+```mermaid
+graph TD
+    A[Client - React/Vite] --> B{Firebase Auth}
+    A --> C{Firestore Database}
+    A --> D{Firebase Storage}
+    C --> C1[(Profiles)]
+    C --> C2[(Interests)]
+    C --> C3[(Chats)]
+    C --> C4[(Reports)]
+    B --> A
+    D --> A
 ```
 
-### Backend
+## 🚀 Getting Started
 
-```bash
-cd server
-npm install
-npm run dev
-```
+### Prerequisites
+- Node.js (v18+)
+- npm or yarn
 
-Backend runs on `http://localhost:5000`, frontend on Vite default (`http://localhost:5173`).
+### Installation
 
-## Firestore Collections Used
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/Shivani-mali/MatchMitra.git
+   cd MatchMitra
+   ```
 
-- `profiles`
-- `interests`
-- `chats/{chatId}/messages`
-- `reports`
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-## Notes
+3. **Environment Setup:**
+   Create a `.env` file in the root directory and add your Firebase credentials:
+   ```env
+   VITE_FIREBASE_API_KEY=your_api_key
+   VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
+   VITE_FIREBASE_PROJECT_ID=your_project_id
+   VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
+   VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+   VITE_FIREBASE_APP_ID=your_app_id
+   ```
 
-- `trustScore` and `verified` are profile fields managed by moderation/admin workflow.
-- Direct user rating is intentionally not implemented.
+4. **Run development server:**
+   ```bash
+   npm run dev
+   ```
+
+## 🛡️ Security & Privacy
+
+MatchMitra prioritizes user privacy through:
+- **Strict Firestore Rules**: Only participants can access their private chats and interest data.
+- **Encrypted Media**: All images and voice notes are stored securely in Firebase Storage.
+- **Reporting System**: Quick-action reporting to keep the platform free from inappropriate behavior.
+
+---
+
+<div align="center">
+  <p>Made with ❤️ by <b>Team Dreamers</b></p>
+</div>

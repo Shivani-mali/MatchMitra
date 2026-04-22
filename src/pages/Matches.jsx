@@ -72,10 +72,10 @@ const InterestRequestCard = ({ interest, senderProfile, onAction, labels = {} })
           <p className="text-xs text-slate-500">{senderProfile?.profession || labels.receivedLabel || 'Match request received'}</p>
         </div>
         <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${interest.status === 'pending'
-            ? 'bg-yellow-100 text-yellow-800'
-            : interest.status === 'accepted'
-              ? 'bg-green-100 text-green-800'
-              : 'bg-red-100 text-red-800'
+          ? 'bg-yellow-100 text-yellow-800'
+          : interest.status === 'accepted'
+            ? 'bg-green-100 text-green-800'
+            : 'bg-red-100 text-red-800'
           }`}>
           {interest.status}
         </span>
@@ -390,8 +390,8 @@ const Matches = () => {
                 type="button"
                 onClick={() => setShowFilters(!showFilters)}
                 className={`group flex items-center gap-3 rounded-2xl px-7 py-4 text-sm font-bold transition-all active:scale-95 ${showFilters
-                    ? 'bg-slate-900 text-white shadow-xl shadow-slate-200'
-                    : 'border border-slate-200 bg-white text-slate-700 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 shadow-sm'
+                  ? 'bg-slate-900 text-white shadow-xl shadow-slate-200'
+                  : 'border border-slate-200 bg-white text-slate-700 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 shadow-sm'
                   }`}
               >
                 <svg
