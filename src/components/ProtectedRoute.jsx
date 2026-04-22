@@ -16,7 +16,7 @@ const ProtectedRoute = ({ children, requireProfile = false }) => {
 
   const profileIsComplete =
     profile?.isProfileComplete ||
-    (typeof profile?.profileComplete === 'number' && profile.profileComplete >= 50);
+    (typeof profile?.profileComplete === 'number' && profile.profileComplete >= 20);
 
   if (requireProfile && !profileIsComplete) {
     return <Navigate to="/profile" replace />;

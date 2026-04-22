@@ -71,13 +71,12 @@ const InterestRequestCard = ({ interest, senderProfile, onAction, labels = {} })
           <p className="truncate text-sm font-semibold text-slate-900">{senderProfile?.name || 'Unknown User'}</p>
           <p className="text-xs text-slate-500">{senderProfile?.profession || labels.receivedLabel || 'Match request received'}</p>
         </div>
-        <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${
-          interest.status === 'pending'
+        <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${interest.status === 'pending'
             ? 'bg-yellow-100 text-yellow-800'
             : interest.status === 'accepted'
-            ? 'bg-green-100 text-green-800'
-            : 'bg-red-100 text-red-800'
-        }`}>
+              ? 'bg-green-100 text-green-800'
+              : 'bg-red-100 text-red-800'
+          }`}>
           {interest.status}
         </span>
       </div>
@@ -138,6 +137,11 @@ const Matches = () => {
     location: '',
     profession: '',
     religionOrCaste: '',
+    gender: '',
+    maritalStatus: '',
+    language: '',
+    education: '',
+    minHeight: '',
   });
   const [profiles, setProfiles] = useState([]);
   const [allProfiles, setAllProfiles] = useState([]);
@@ -148,6 +152,7 @@ const Matches = () => {
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(true);
   const [selectedProfile, setSelectedProfile] = useState(null);
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -218,17 +223,25 @@ const Matches = () => {
       const age = Number(profile.age);
       const minAge = Number(filters.minAge) || 0;
       const maxAge = Number(filters.maxAge) || 200;
+      const height = Number(profile.height) || 0;
+      const minHeight = Number(filters.minHeight) || 0;
       const religionOrCaste = filters.religionOrCaste.toLowerCase();
 
       const ageMatch = age >= minAge && age <= maxAge;
+      const heightMatch = height >= minHeight;
       const locationMatch = !filters.location || (profile.location || '').toLowerCase().includes(filters.location.toLowerCase());
       const professionMatch = !filters.profession || (profile.profession || '').toLowerCase().includes(filters.profession.toLowerCase());
+      const educationMatch = !filters.education || (profile.education || '').toLowerCase().includes(filters.education.toLowerCase());
+      const languageMatch = !filters.language || (profile.language || '').toLowerCase().includes(filters.language.toLowerCase());
+      const maritalStatusMatch = !filters.maritalStatus || profile.maritalStatus === filters.maritalStatus;
+      const genderMatch = !filters.gender || (profile.gender || '').toLowerCase() === filters.gender.toLowerCase();
+
       const religionCasteMatch =
         !religionOrCaste ||
         (profile.religion || '').toLowerCase().includes(religionOrCaste) ||
         (profile.caste || '').toLowerCase().includes(religionOrCaste);
 
-      return ageMatch && locationMatch && professionMatch && religionCasteMatch;
+      return ageMatch && heightMatch && locationMatch && professionMatch && educationMatch && languageMatch && maritalStatusMatch && genderMatch && religionCasteMatch;
     });
   }, [profiles, filters]);
 
@@ -361,121 +374,156 @@ const Matches = () => {
       {loading ? (
         <MatchesSkeleton />
       ) : (
-      <main className="mx-auto max-w-6xl space-y-6 p-4 md:p-6">
-        <section className="rounded-3xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
-          <h1 className="text-2xl font-semibold text-slate-900">{t('matches.find')}</h1>
-          <p className="mt-1 text-sm text-slate-500">{t('matches.subtitle')}</p>
-        </section>
+        <main className="mx-auto max-w-7xl space-y-8 px-4 py-8 md:px-6 md:py-12">
+          <section className="relative">
+            <div className="flex flex-col items-start justify-between gap-6 rounded-[2.5rem] border border-slate-200 bg-white p-8 shadow-sm md:flex-row md:items-center md:px-10 md:py-12">
+              <div className="space-y-2">
+                <h1 className="text-3xl font-black tracking-tight text-slate-900 md:text-5xl">
+                  {t('matches.title')}
+                </h1>
+                <p className="text-base font-medium text-slate-500 md:text-lg">
+                  {t('matches.subtitle')}
+                </p>
+              </div>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{t('matches.filterProfiles')}</h2>
-          <div className="mt-3">
-            <FilterBar filters={filters} setFilters={setFilters} />
-          </div>
-        </section>
+              <button
+                type="button"
+                onClick={() => setShowFilters(!showFilters)}
+                className={`group flex items-center gap-3 rounded-2xl px-7 py-4 text-sm font-bold transition-all active:scale-95 ${showFilters
+                    ? 'bg-slate-900 text-white shadow-xl shadow-slate-200'
+                    : 'border border-slate-200 bg-white text-slate-700 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 shadow-sm'
+                  }`}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  className={`h-5 w-5 transition-transform duration-500 ${showFilters ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v2.586a1 1 0 0 1-.293.707l-6.414 6.414a1 1 0 0 0-.293.707V17l-4 4v-6.586a1 1 0 0 0-.293-.707L3.293 7.293A1 1 0 0 1 3 6.586V4Z" />
+                </svg>
+                {showFilters ? 'Hide Advanced Filters' : 'Show Advanced Filters'}
+              </button>
+            </div>
 
-        {status && <p className="rounded-lg bg-indigo-50 px-3 py-2 text-sm text-indigo-700">{status}</p>}
+            {showFilters && (
+              <div className="mt-8 overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white shadow-2xl shadow-slate-200/40 transition-all animate-in fade-in slide-in-from-top-8 duration-700">
+                <div className="border-b border-slate-50 bg-slate-50/20 px-10 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="h-1.5 w-10 rounded-full bg-indigo-600 shadow-[0_0_10px_rgba(79,70,229,0.4)]"></div>
+                    <h2 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Personalize Your Search</h2>
+                  </div>
+                </div>
+                <div className="p-8 md:p-10">
+                  <FilterBar filters={filters} setFilters={setFilters} />
+                </div>
+              </div>
+            )}
+          </section>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-          <h2 className="text-lg font-semibold text-slate-900">{t('matches.interestsReceived')}</h2>
-          <p className="mt-1 text-sm text-slate-500">{t('matches.interestsHelp')}</p>
+          {status && <p className="rounded-lg bg-indigo-50 px-3 py-2 text-sm text-indigo-700">{status}</p>}
 
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            {interests.received.length > 0 ? (
-              interests.received.map((interest) => {
-                const senderProfile = allProfiles.find((profile) => profile.uid === interest.fromUser);
-                return (
-                  <InterestRequestCard
-                    key={interest.id}
-                    interest={interest}
-                    senderProfile={senderProfile}
-                    onAction={handleInterestAction}
-                    labels={{ acceptLabel: t('matches.accept'), rejectLabel: t('matches.reject'), receivedLabel: t('matches.sentYouInterest') }}
+          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+            <h2 className="text-lg font-semibold text-slate-900">{t('matches.interestsReceived')}</h2>
+            <p className="mt-1 text-sm text-slate-500">{t('matches.interestsHelp')}</p>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {interests.received.length > 0 ? (
+                interests.received.map((interest) => {
+                  const senderProfile = allProfiles.find((profile) => profile.uid === interest.fromUser);
+                  return (
+                    <InterestRequestCard
+                      key={interest.id}
+                      interest={interest}
+                      senderProfile={senderProfile}
+                      onAction={handleInterestAction}
+                      labels={{ acceptLabel: t('matches.accept'), rejectLabel: t('matches.reject'), receivedLabel: t('matches.sentYouInterest') }}
+                    />
+                  );
+                })
+              ) : (
+                <div className="md:col-span-2 rounded-2xl border border-dashed border-slate-200 p-6 text-center">
+                  <p className="text-sm text-slate-500">{t('matches.noInterests')}</p>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+            <h2 className="text-lg font-semibold text-slate-900">{t('matches.likedProfiles')}</h2>
+            <p className="mt-1 text-sm text-slate-500">{t('matches.likedHelp')}</p>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {likedProfiles.length > 0 ? (
+                likedProfiles.map((profile) => (
+                  <ActivityProfileCard key={profile.uid} profile={profile} label={t('matches.likedProfiles')} tone="indigo" labels={{ activityLabel: t('matches.unknownUser') }} />
+                ))
+              ) : (
+                <div className="md:col-span-2 rounded-2xl border border-dashed border-slate-200 p-6 text-center">
+                  <p className="text-sm text-slate-500">{t('matches.noLiked')}</p>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+            <h2 className="text-lg font-semibold text-slate-900">{t('matches.reportedProfiles')}</h2>
+            <p className="mt-1 text-sm text-slate-500">{t('matches.reportedHelp')}</p>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {reportedProfiles.length > 0 ? (
+                reportedProfiles.map((profile) => (
+                  <ActivityProfileCard key={profile.uid} profile={profile} label={t('matches.reportedProfiles')} tone="rose" labels={{ activityLabel: t('matches.unknownUser') }} />
+                ))
+              ) : (
+                <div className="md:col-span-2 rounded-2xl border border-dashed border-slate-200 p-6 text-center">
+                  <p className="text-sm text-slate-500">{t('matches.noReported')}</p>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold text-slate-900">{t('matches.recommendedProfiles')}</h2>
+              <p className="mt-1 text-sm text-slate-500">{t('matches.recommendedHelp')}</p>
+            </div>
+
+            {filteredProfiles.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {filteredProfiles.map((profile) => (
+                  <ProfileCard
+                    key={profile.uid}
+                    profile={profile}
+                    matchScore={calculateMatchScore(currentProfile || {}, profile)}
+                    labels={{
+                      matchLabel: t('matches.matchPercent', { score: calculateMatchScore(currentProfile || {}, profile).score }),
+                      sendInterestLabel: t('matches.sendInterest'),
+                      likeLabel: t('matches.like'),
+                      unlikeLabel: t('matches.unlike'),
+                      viewDetailsLabel: t('matches.viewDetails'),
+                      skipLabel: t('matches.skip'),
+                      blockLabel: t('matches.block'),
+                      unblockLabel: t('matches.unblock'),
+                      reportLabel: t('matches.report'),
+                    }}
+                    onLike={handleLikeUser}
+                    onSendInterest={handleSendInterest}
+                    onViewDetails={handleViewDetails}
+                    onReport={handleReportUser}
+                    onBlock={handleBlockUser}
+                    isBlocked={blockedUsers.includes(profile.uid)}
                   />
-                );
-              })
+                ))}
+              </div>
             ) : (
-              <div className="md:col-span-2 rounded-2xl border border-dashed border-slate-200 p-6 text-center">
-                <p className="text-sm text-slate-500">{t('matches.noInterests')}</p>
+              <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center">
+                <p className="text-sm text-slate-500">{t('matches.noMatches')}</p>
               </div>
             )}
-          </div>
-        </section>
-
-        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-          <h2 className="text-lg font-semibold text-slate-900">{t('matches.likedProfiles')}</h2>
-          <p className="mt-1 text-sm text-slate-500">{t('matches.likedHelp')}</p>
-
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            {likedProfiles.length > 0 ? (
-              likedProfiles.map((profile) => (
-                <ActivityProfileCard key={profile.uid} profile={profile} label={t('matches.likedProfiles')} tone="indigo" labels={{ activityLabel: t('matches.unknownUser') }} />
-              ))
-            ) : (
-              <div className="md:col-span-2 rounded-2xl border border-dashed border-slate-200 p-6 text-center">
-                <p className="text-sm text-slate-500">{t('matches.noLiked')}</p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-          <h2 className="text-lg font-semibold text-slate-900">{t('matches.reportedProfiles')}</h2>
-          <p className="mt-1 text-sm text-slate-500">{t('matches.reportedHelp')}</p>
-
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            {reportedProfiles.length > 0 ? (
-              reportedProfiles.map((profile) => (
-                <ActivityProfileCard key={profile.uid} profile={profile} label={t('matches.reportedProfiles')} tone="rose" labels={{ activityLabel: t('matches.unknownUser') }} />
-              ))
-            ) : (
-              <div className="md:col-span-2 rounded-2xl border border-dashed border-slate-200 p-6 text-center">
-                <p className="text-sm text-slate-500">{t('matches.noReported')}</p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold text-slate-900">{t('matches.recommendedProfiles')}</h2>
-            <p className="mt-1 text-sm text-slate-500">{t('matches.recommendedHelp')}</p>
-          </div>
-
-          {filteredProfiles.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {filteredProfiles.map((profile) => (
-                <ProfileCard
-                  key={profile.uid}
-                  profile={profile}
-                  matchScore={calculateMatchScore(currentProfile || {}, profile)}
-                  labels={{
-                    matchLabel: t('matches.matchPercent', { score: calculateMatchScore(currentProfile || {}, profile).score }),
-                    sendInterestLabel: t('matches.sendInterest'),
-                    likeLabel: t('matches.like'),
-                    unlikeLabel: t('matches.unlike'),
-                    viewDetailsLabel: t('matches.viewDetails'),
-                    skipLabel: t('matches.skip'),
-                    blockLabel: t('matches.block'),
-                    unblockLabel: t('matches.unblock'),
-                    reportLabel: t('matches.report'),
-                  }}
-                  onLike={handleLikeUser}
-                  onSendInterest={handleSendInterest}
-                  onViewDetails={handleViewDetails}
-                  onReport={handleReportUser}
-                  onBlock={handleBlockUser}
-                  isBlocked={blockedUsers.includes(profile.uid)}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center">
-              <p className="text-sm text-slate-500">{t('matches.noMatches')}</p>
-            </div>
-          )}
-        </section>
-      </main>
+          </section>
+        </main>
       )}
 
       <ProfileModal
