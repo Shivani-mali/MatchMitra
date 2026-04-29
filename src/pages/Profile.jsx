@@ -131,6 +131,12 @@ const Profile = () => {
     event.preventDefault();
     if (!user?.uid) return;
 
+    const parsedAge = Number(profile.age);
+    if (!parsedAge || parsedAge < 21 || parsedAge > 40) {
+      setMessage('Age must be between 21 and 40 years.');
+      return;
+    }
+
     setSaving(true);
     setMessage('');
 
@@ -139,7 +145,7 @@ const Profile = () => {
         ...profile,
         uid: user.uid,
         email: user.email,
-        age: Number(profile.age) || 0,
+        age: parsedAge,
         partnerPreferences: {
           ...profile.partnerPreferences,
           minAge: Number(profile.partnerPreferences.minAge) || null,
@@ -206,7 +212,7 @@ const Profile = () => {
 
           <form onSubmit={onSubmit} className="mt-6 grid gap-3 md:grid-cols-2">
             <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder={t('profile.name')} value={profile.name} onChange={(event) => updateField('name', event.target.value)} />
-            <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder={t('profile.age')} value={profile.age} onChange={(event) => updateField('age', event.target.value)} />
+            <input type="number" min="21" max="40" className="rounded-lg border border-slate-200 px-3 py-2" placeholder={t('profile.age')} value={profile.age} onChange={(event) => updateField('age', event.target.value)} />
             <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder={t('profile.gender')} value={profile.gender} onChange={(event) => updateField('gender', event.target.value)} />
             <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder={t('profile.location')} value={profile.location} onChange={(event) => updateField('location', event.target.value)} />
             <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder={`${t('profile.religion')} (optional)`} value={profile.religion} onChange={(event) => updateField('religion', event.target.value)} />
