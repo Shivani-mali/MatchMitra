@@ -336,29 +336,19 @@ const Chat = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
       <Navbar />
-      
-      {/* Page Header */}
-      <div className="border-b border-slate-200 bg-white px-4 py-3">
-        <div className="mx-auto max-w-7xl">
-          <h2 className="flex items-center gap-2 text-xl font-semibold text-slate-800">
-            <ChatIcon className="h-5 w-5 text-indigo-600" />
-            {t('chat.pageTitle')}
-          </h2>
-        </div>
-      </div>
 
-      <main className="mx-auto flex h-[calc(100vh-152px)] max-w-7xl gap-4 p-4 md:h-[calc(100vh-200px)] md:p-6">
+      <main className="mx-auto flex h-[calc(100dvh-80px)] max-w-7xl gap-4 p-3 sm:p-5">
         {/* Chat List - Left Sidebar */}
         <aside
-          className={`w-full rounded-2xl border border-slate-200 bg-white shadow-sm md:w-1/3 ${
+          className={`w-full rounded-3xl border border-slate-200/80 bg-white shadow-sm md:w-1/3 ${
             isMobileView && selectedProfile ? 'hidden' : 'block'
           }`}
         >
-          <div className="border-b border-slate-200 p-4">
-            <h3 className="text-lg font-semibold text-slate-800">{t('chat.messages')}</h3>
-            <p className="mt-1 text-xs text-slate-500">
+          <div className="border-b border-slate-100 p-4">
+            <h3 className="text-base font-black text-slate-900">{t('chat.messages')}</h3>
+            <p className="mt-0.5 text-xs font-semibold text-slate-400">
               {chats.length} chat{chats.length !== 1 ? 's' : ''}
             </p>
           </div>

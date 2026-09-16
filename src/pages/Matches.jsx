@@ -361,27 +361,19 @@ const Matches = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
       <Navbar />
-      <div className="border-b border-slate-200 bg-white px-4 py-3">
-        <div className="mx-auto max-w-6xl">
-          <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-800">
-            <MatchIcon className="h-5 w-5 text-indigo-600" />
-            {t('matches.title')}
-          </h2>
-        </div>
-      </div>
       {loading ? (
         <MatchesSkeleton />
       ) : (
-        <main className="mx-auto max-w-7xl space-y-8 px-4 py-8 md:px-6 md:py-12">
+        <main className="mx-auto max-w-7xl space-y-6 p-3.5 sm:p-6">
           <section className="relative">
-            <div className="flex flex-col items-start justify-between gap-6 rounded-[2.5rem] border border-slate-200 bg-white p-8 shadow-sm md:flex-row md:items-center md:px-10 md:py-12">
-              <div className="space-y-2">
-                <h1 className="text-3xl font-black tracking-tight text-slate-900 md:text-5xl">
+            <div className="flex flex-col items-start justify-between gap-4 rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm md:flex-row md:items-center">
+              <div className="space-y-1.5">
+                <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-4xl">
                   {t('matches.title')}
                 </h1>
-                <p className="text-base font-medium text-slate-500 md:text-lg">
+                <p className="text-xs font-semibold text-slate-500 sm:text-sm">
                   {t('matches.subtitle')}
                 </p>
               </div>
